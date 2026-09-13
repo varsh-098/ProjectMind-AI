@@ -1,0 +1,1 @@
+# ProjectMind AI — tests package
