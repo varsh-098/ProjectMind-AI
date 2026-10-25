@@ -1,0 +1,24 @@
+# ============================================================
+# ProjectMind AI — Python Dependencies
+# ============================================================
+
+# --- FastAPI + web server ---
+fastapi==0.115.5        # Web framework. Handles routing, validation, Swagger docs.
+uvicorn[standard]==0.32.1  # ASGI server that runs FastAPI. Listens on a port,
+                           # passes requests to FastAPI. 'standard' adds WebSocket support.
+
+# --- HTTP client ---
+httpx==0.28.1           # Async HTTP client. Used to call llama-server (and future LLM providers).
+                        # We use httpx (not requests) because FastAPI is async — blocking
+                        # HTTP calls would freeze the entire server.
+
+# --- Configuration & secrets ---
+python-dotenv==1.0.1    # Reads .env files into os.environ. Lets us use KIE_API_KEY=... in a
+                        # file instead of setting env vars manually each time.
+pydantic==2.10.3        # Data validation. FastAPI uses it for request/response models.
+pydantic-settings==2.7.0  # Extension of pydantic for settings/config management.
+                          # Lets us define a Settings class that reads from env vars automatically.
+
+# --- Testing ---
+pytest==8.3.4           # Test runner. We'll write tests as we build each layer.
+pytest-asyncio==0.24.0  # Allows testing async functions (important since FastAPI is async).
