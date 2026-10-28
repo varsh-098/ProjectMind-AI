@@ -64,6 +64,17 @@ class Settings(BaseSettings):
     # Popular options: llama-3.3-70b-versatile, mixtral-8x7b-32768, gemma2-9b-it
     groq_model: str = "llama-3.3-70b-versatile"
 
+    # -------------------------------------------------------
+    # Gemini (Google AI Studio) settings
+    # -------------------------------------------------------
+    # API key from https://aistudio.google.com/
+    # Default: None — only required when LLM_PROVIDER=gemini
+    gemini_api_key: str | None = None
+
+    # Which model to use on Gemini.
+    # Popular options: gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash
+    gemini_model: str = "gemini-2.5-flash"
+
     # Timeout in seconds for LLM requests.
     # Local models (Nemotron) need more time. Cloud (Groq) is usually fast.
     llm_timeout: int = 120

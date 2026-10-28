@@ -5,7 +5,7 @@ Abstract base class for ALL LLM providers.
 
 WHY THIS FILE EXISTS:
 This defines the CONTRACT — the interface that every LLM provider
-(Nemotron, GPT-6 Astra, or anything else in the future) MUST follow.
+(Nemotron, Groq, Gemini, or anything else in the future) MUST follow.
 
 Think of it like a job description:
     "Every LLM provider must be able to:
@@ -13,8 +13,8 @@ Think of it like a job description:
        2. Return a response (string)"
 
 That's it. HOW each provider does it internally is their own business.
-Nemotron calls llama-server. GPT-6 Astra will call KIE. But from the
-outside, the rest of our app sees the same interface.
+Nemotron calls llama-server. Groq calls Groq's cloud. Gemini calls
+Google's API. But from the outside, the rest of our app sees the same interface.
 
 INTERVIEW QUESTION:
     "Why use an abstract base class instead of just writing the
@@ -37,7 +37,7 @@ class BaseLLMProvider(ABC):
     """
     Abstract base class for LLM providers.
 
-    Every concrete provider (NemotronProvider, future KIEProvider, etc.)
+    Every concrete provider (NemotronProvider, GroqProvider, GeminiProvider, etc.)
     must inherit from this and implement the `chat` method.
 
     ABC = Abstract Base Class.

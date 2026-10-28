@@ -13,10 +13,10 @@ WHY USE A FACTORY?
     1. The router (chat.py) just says: provider = get_llm_provider()
        It never imports NemotronProvider directly.
 
-    2. When we later add GPT-6 Astra via KIE, we:
-       - Create backend/llm/kie.py  (new file)
-       - Add one elif here           (one line)
-       - Set LLM_PROVIDER=kie in .env (config change)
+    2. When we added Gemini (Phase 9), we:
+       - Created backend/llm/gemini_provider.py  (new file)
+       - Added one elif here                     (one line)
+       - Set LLM_PROVIDER=gemini in .env          (config change)
        That's it. Zero changes to chat.py, llm_service.py, or main.py.
 
     3. This is the Factory Pattern — one of the most common design patterns.
@@ -62,16 +62,20 @@ def get_llm_provider() -> BaseLLMProvider:
         from backend.llm.groq_provider import GroqProvider
         return GroqProvider()
 
+    elif provider_name == "gemini":
+        from backend.llm.gemini_provider import GeminiProvider
+        return GeminiProvider()
+
     # -----------------------------------------------------------
     # Future providers go here:
     #
-    # elif provider_name == "kie":
-    #     from backend.llm.kie import KIEProvider
-    #     return KIEProvider()
+    # elif provider_name == "openai":
+    #     from backend.llm.openai_provider import OpenAIProvider
+    #     return OpenAIProvider()
     # -----------------------------------------------------------
 
     raise ValueError(
         f"Unknown LLM provider: '{provider_name}'. "
         f"Check LLM_PROVIDER in your .env file. "
-        f"Supported providers: nemotron, groq"
+        f"Supported providers: nemotron, groq, gemini"
     )
