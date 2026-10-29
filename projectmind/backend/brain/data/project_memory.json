@@ -1,0 +1,140 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-10-29T11:04:07.767279+00:00",
+  "facts": {
+    "backend_framework": {
+      "key": "backend_framework",
+      "value": "FastAPI 0.115 on Python 3.12 with async route handlers and Uvicorn ASGI server.",
+      "category": "tech_stack",
+      "tags": [
+        "fastapi",
+        "python",
+        "backend"
+      ],
+      "updated_at": "2026-10-28T14:58:31.104493+00:00",
+      "created_at": "2026-10-28T14:58:31.104493+00:00"
+    },
+    "llm_architecture": {
+      "key": "llm_architecture",
+      "value": "Decoupled LLM abstraction using the Factory and Strategy patterns in backend/llm/factory.py.",
+      "category": "architecture",
+      "tags": [
+        "llm",
+        "factory",
+        "strategy"
+      ],
+      "updated_at": "2026-10-28T14:58:31.104493+00:00",
+      "created_at": "2026-10-28T14:58:31.104493+00:00"
+    },
+    "supported_llm_providers": {
+      "key": "supported_llm_providers",
+      "value": "Local Nemotron (via llama-server port 8081), Groq (qwen3.8-27b), and Google AI Studio Gemini (gemini-3.8-flash).",
+      "category": "tech_stack",
+      "tags": [
+        "nemotron",
+        "groq",
+        "gemini"
+      ],
+      "updated_at": "2026-10-28T14:58:31.105647+00:00",
+      "created_at": "2026-10-28T14:58:31.105647+00:00"
+    },
+    "file_access_security": {
+      "key": "file_access_security",
+      "value": "ProjectFileManager enforces strict path traversal protection and automatically blocks sensitive files (.env) and binary files.",
+      "category": "architecture",
+      "tags": [
+        "security",
+        "file_manager",
+        "safety"
+      ],
+      "updated_at": "2026-10-28T14:58:31.105647+00:00",
+      "created_at": "2026-10-28T14:58:31.105647+00:00"
+    },
+    "vector_embeddings": {
+      "key": "vector_embeddings",
+      "value": "256-dimensional SubwordSemanticEmbedder with L2 normalization and cosine similarity calculation.",
+      "category": "tech_stack",
+      "tags": [
+        "embeddings",
+        "vectors",
+        "nlp"
+      ],
+      "updated_at": "2026-10-28T14:58:31.105647+00:00",
+      "created_at": "2026-10-28T14:58:31.105647+00:00"
+    },
+    "rag_pipeline": {
+      "key": "rag_pipeline",
+      "value": "In-memory ProjectRAGIndex with sliding window chunking (35 lines, 8 line overlap) injecting code chunks into prompts.",
+      "category": "architecture",
+      "tags": [
+        "rag",
+        "retrieval",
+        "prompt"
+      ],
+      "updated_at": "2026-10-28T14:58:31.106654+00:00",
+      "created_at": "2026-10-28T14:58:31.106654+00:00"
+    },
+    "code_formatting": {
+      "key": "code_formatting",
+      "value": "Use Black and Ruff with 88-character max line length.",
+      "category": "conventions",
+      "tags": [
+        "formatting",
+        "style",
+        "python"
+      ],
+      "updated_at": "2026-10-29T11:04:07.767279+00:00",
+      "created_at": "2026-10-28T14:58:39.203252+00:00"
+    }
+  },
+  "decisions": [
+    {
+      "id": 1,
+      "title": "Adopt Strategy & Factory Patterns for Multi-LLM Support",
+      "description": "All LLM integrations implement BaseLLMProvider so chat endpoints remain provider-agnostic.",
+      "rationale": "Allows switching between local offline models (Nemotron) and cloud APIs (Groq, Gemini) with zero code changes.",
+      "date": "2026-10-28",
+      "tags": [
+        "llm",
+        "design-pattern",
+        "architecture"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Adopt In-Memory Vector Index for Phase 12",
+      "description": "Built custom ProjectRAGIndex with cosine similarity and sliding window chunking.",
+      "rationale": "Keeps learning curve gentle and avoids heavy vector DB daemon dependencies for local dev.",
+      "date": "2026-10-28",
+      "tags": [
+        "rag",
+        "vectors",
+        "simplicity"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Adopt In-Memory Vector Index for Phase 12",
+      "description": "Built custom ProjectRAGIndex with cosine similarity and sliding window chunking.",
+      "rationale": "Keeps learning curve gentle and avoids heavy vector DB daemon dependencies for local dev.",
+      "date": "2026-10-28",
+      "tags": [
+        "rag",
+        "vectors",
+        "simplicity"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Adopt In-Memory Vector Index for Phase 12",
+      "description": "Built custom ProjectRAGIndex with cosine similarity and sliding window chunking.",
+      "rationale": "Keeps learning curve gentle and avoids heavy vector DB daemon dependencies for local dev.",
+      "date": "2026-10-29",
+      "tags": [
+        "rag",
+        "vectors",
+        "simplicity"
+      ]
+    }
+  ]
+}

@@ -72,7 +72,14 @@ class ProjectFileManager:
         """
         if root_path is None:
             # Anchor to the ProjectMind-AI repo root
-            self.root_path = Path(__file__).resolve().parent.parent.parent
+            current = Path(__file__).resolve().parent
+            found_root = None
+            while current != current.parent:
+                if (current / ".git").exists():
+                    found_root = current
+                    break
+                current = current.parent
+            self.root_path = found_root or Path(__file__).resolve().parent.parent.parent
         else:
             self.root_path = Path(root_path).resolve()
 
@@ -230,6 +237,57 @@ class ProjectFileManager:
             return "\n".join(numbered)
 
         return "\n".join(selected_lines)
+
+    def create_file(self, filepath: str | Path, content: str, overwrite: bool = False) -> dict[str, Any]:
+        """
+        Create a new file within the project boundaries.
+        """
+        target = self.get_safe_path(filepath)
+        if self.is_ignored(target):
+            raise PermissionError(f"Access to file '{filepath}' is restricted.")
+
+        if target.exists() and not overwrite:
+            raise FileExistsError(f"File '{filepath}' already exists. Set overwrite=True to replace.")
+
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+        return {
+            "path": target.relative_to(self.root_path).as_posix(),
+            "size_bytes": len(content.encode("utf-8")),
+            "status": "created" if not target.exists() else "written",
+        }
+
+    def edit_file(self, filepath: str | Path, old_str: str, new_str: str) -> dict[str, Any]:
+        """
+        Safely replace an exact target substring within an existing project file.
+        Enforces uniqueness to avoid unintended modifications.
+        """
+        target = self.get_safe_path(filepath)
+        if self.is_ignored(target):
+            raise PermissionError(f"Access to file '{filepath}' is restricted.")
+        if not target.is_file():
+            raise FileNotFoundError(f"File '{filepath}' does not exist.")
+
+        content = target.read_text(encoding="utf-8", errors="replace")
+
+        occurrences = content.count(old_str)
+        if occurrences == 0:
+            raise ValueError(f"Target string not found in '{filepath}'.")
+        if occurrences > 1:
+            raise ValueError(
+                f"Target string appears {occurrences} times in '{filepath}'. "
+                "Provide more surrounding context to uniquely identify the edit location."
+            )
+
+        updated_content = content.replace(old_str, new_str, 1)
+        target.write_text(updated_content, encoding="utf-8")
+
+        return {
+            "path": target.relative_to(self.root_path).as_posix(),
+            "occurrences_replaced": 1,
+            "status": "success",
+        }
 
     def search_code(
         self,
