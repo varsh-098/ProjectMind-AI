@@ -54,7 +54,12 @@ class MongoDBManager:
 
     @property
     def db_name(self) -> str:
-        return self._custom_db_name or getattr(settings, "mongodb_db_name", "projectmind")
+        return (
+            self._custom_db_name
+            or getattr(settings, "mongodb_database", None)
+            or getattr(settings, "mongodb_db_name", None)
+            or "projectmind"
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -96,12 +101,20 @@ class MongoDBManager:
         try:
             db = self._db
             if db is not None:
+                # Existing indexes
                 db["messages"].create_index("session_id")
                 db["messages"].create_index("timestamp")
                 db["agent_runs"].create_index("run_id", unique=True)
                 db["agent_runs"].create_index("timestamp")
                 db["sessions"].create_index("session_id", unique=True)
                 db["custom_agents"].create_index("name", unique=True)
+
+                # Auth & Security indexes (Stage 1)
+                db["users"].create_index("email", unique=True)
+                db["users"].create_index("username", unique=True)
+                db["auth_sessions"].create_index("token_hash", unique=True)
+                db["auth_sessions"].create_index("expires_at", expireAfterSeconds=0)
+                db["auth_sessions"].create_index("user_id")
         except Exception as e:
             logger.warning(f"Could not build indexes (might be read-only or connecting): {e}")
 
@@ -175,6 +188,14 @@ class MongoDBManager:
     @property
     def custom_agents(self) -> Any:
         return self.get_database()["custom_agents"]
+
+    @property
+    def users(self) -> Any:
+        return self.get_database()["users"]
+
+    @property
+    def auth_sessions(self) -> Any:
+        return self.get_database()["auth_sessions"]
 
     def close(self) -> None:
         """Close connection pool."""

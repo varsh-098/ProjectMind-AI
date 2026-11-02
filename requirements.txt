@@ -22,3 +22,9 @@ pydantic-settings==2.7.0  # Extension of pydantic for settings/config management
 # --- Testing ---
 pytest==8.3.4           # Test runner. We'll write tests as we build each layer.
 pytest-asyncio==0.24.0  # Allows testing async functions (important since FastAPI is async).
+
+# --- Database & Authentication (MongoDB Atlas & Argon2id) ---
+pymongo>=4.9.0          # MongoDB Python driver for Atlas persistence
+dnspython>=2.6.0        # Required for mongodb+srv:// connection strings
+argon2-cffi>=23.1.0     # Secure Argon2id password hashing (OWASP standard)
+

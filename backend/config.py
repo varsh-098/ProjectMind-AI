@@ -33,8 +33,40 @@ def _load_env_file() -> dict[str, str]:
     return env_map
 
 
+VALID_SAMESITE_VALUES = {"lax", "strict", "none"}
+
+
+def validate_security_config(cookie_samesite: str, cookie_secure: bool, cors_allowed_origins: str) -> None:
+    """
+    Validate cookie and CORS settings for security compliance.
+
+    Raises:
+        ValueError: If SameSite is invalid, if SameSite=None is used without Secure=True,
+                    or if wildcard CORS origin '*' is configured with credentials.
+    """
+    samesite_clean = (cookie_samesite or "").strip().lower()
+    if samesite_clean not in VALID_SAMESITE_VALUES:
+        raise ValueError(
+            f"Invalid cookie_samesite value '{cookie_samesite}'. Must be one of: {sorted(VALID_SAMESITE_VALUES)}."
+        )
+
+    if samesite_clean == "none" and not cookie_secure:
+        raise ValueError(
+            "Invalid configuration: cookie_samesite='none' requires cookie_secure=True. "
+            "Modern browsers reject SameSite=None cookies unless Secure is enabled."
+        )
+
+    if cors_allowed_origins:
+        origins = [o.strip() for o in cors_allowed_origins.split(",") if o.strip()]
+        if "*" in origins:
+            raise ValueError(
+                "Invalid configuration: Wildcard CORS origin '*' is prohibited when credentials/cookies are enabled."
+            )
+
+
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
+    from pydantic import model_validator
 
     class Settings(BaseSettings):
         """Application settings loaded from environment variables / .env file."""
@@ -59,7 +91,23 @@ try:
 
         # Phase 23: MongoDB Atlas Persistence
         mongodb_uri: str | None = None
-        mongodb_db_name: str = "projectmind"
+        mongodb_database: str = "projectmind"
+        mongodb_db_name: str | None = None  # legacy backward-compatible alias
+
+        # Auth & Security Configuration
+        cookie_secure: bool = False
+        cookie_samesite: str = "lax"
+        session_expiry_days: int = 7
+        cors_allowed_origins: str = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
+
+        @model_validator(mode="after")
+        def validate_security(self):
+            validate_security_config(
+                cookie_samesite=self.cookie_samesite,
+                cookie_secure=self.cookie_secure,
+                cors_allowed_origins=self.cors_allowed_origins,
+            )
+            return self
 
         model_config = SettingsConfigDict(
             env_file=".env",
@@ -95,6 +143,32 @@ except ImportError:
 
             # Phase 23: MongoDB Atlas Persistence
             self.mongodb_uri = os.getenv("MONGODB_URI") or env_map.get("mongodb_uri")
-            self.mongodb_db_name = os.getenv("MONGODB_DB_NAME") or env_map.get("mongodb_db_name", "projectmind")
+            self.mongodb_database = (
+                os.getenv("MONGODB_DATABASE")
+                or os.getenv("MONGODB_DB_NAME")
+                or env_map.get("mongodb_database")
+                or env_map.get("mongodb_db_name")
+                or "projectmind"
+            )
+            self.mongodb_db_name = self.mongodb_database  # legacy backward-compatible alias
+
+            # Auth & Security Configuration
+            self.cookie_secure = (
+                (os.getenv("COOKIE_SECURE") or env_map.get("cookie_secure", "false")).lower() in ("true", "1", "yes")
+            )
+            self.cookie_samesite = (os.getenv("COOKIE_SAMESITE") or env_map.get("cookie_samesite", "lax")).strip().lower()
+            self.session_expiry_days = int(
+                os.getenv("SESSION_EXPIRY_DAYS") or env_map.get("session_expiry_days", "7")
+            )
+            self.cors_allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS") or env_map.get(
+                "cors_allowed_origins",
+                "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173",
+            )
+
+            validate_security_config(
+                cookie_samesite=self.cookie_samesite,
+                cookie_secure=self.cookie_secure,
+                cors_allowed_origins=self.cors_allowed_origins,
+            )
 
     settings = FallbackSettings()

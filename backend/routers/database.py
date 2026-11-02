@@ -178,3 +178,4 @@ async def get_supervisor_run(run_id: str) -> Dict[str, Any]:
     if not run:
         raise HTTPException(status_code=404, detail=f"Agent run '{run_id}' not found.")
     return run
+

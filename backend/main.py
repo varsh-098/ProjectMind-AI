@@ -43,15 +43,11 @@ SWAGGER / OPENAPI:
 """
 
 from fastapi import FastAPI
-from backend.routers import chat, project, memory, agents, llm, database
+from backend.routers import chat, project, memory, agents, llm, database, auth
+from backend.config import settings
 
 # -------------------------------------------------------
 # Create the FastAPI application
-# -------------------------------------------------------
-# These metadata fields populate the Swagger UI at /docs:
-#   title → shown as the page heading
-#   description → shown below the heading
-#   version → shown next to the title
 # -------------------------------------------------------
 app = FastAPI(
     title="ProjectMind AI",
@@ -61,6 +57,29 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+# -------------------------------------------------------
+# CORS Configuration (Strict Credentialed Access)
+# -------------------------------------------------------
+# When cookies/credentials are used, browsers reject wildcard '*'.
+# We permit explicit origins configured in settings.
+try:
+    from fastapi.middleware.cors import CORSMiddleware
+    allowed_origins = [
+        o.strip()
+        for o in getattr(settings, "cors_allowed_origins", "").split(",")
+        if o.strip()
+    ]
+    if allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            allow_headers=["*"],
+        )
+except ImportError:
+    pass
 
 
 # -------------------------------------------------------
@@ -80,6 +99,7 @@ app.include_router(memory.router)
 app.include_router(agents.router)
 app.include_router(llm.router)
 app.include_router(database.router)
+app.include_router(auth.router)
 
 
 # -------------------------------------------------------
