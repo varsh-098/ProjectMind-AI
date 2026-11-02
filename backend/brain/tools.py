@@ -24,6 +24,12 @@ import subprocess
 from typing import Any, Optional, List, Dict
 from backend.brain.file_manager import ProjectFileManager
 from backend.brain.memory import ProjectMemoryManager
+from backend.security import (
+    permission_checker,
+    command_sanitizer,
+    workspace_sandbox,
+    PermissionDeniedError,
+)
 
 # Singleton instances for tool calls
 _file_manager = ProjectFileManager()
@@ -184,55 +190,14 @@ BLOCKED_COMMAND_PATTERNS = [
 
 def run_command(command: str, timeout: int = 30) -> dict[str, Any]:
     """
-    Safely execute a shell command inside the project root directory.
+    Safely execute a shell command inside the project root directory
+    using the security sandbox with stripped environment secrets.
 
     Args:
         command: Command line string to execute (e.g. 'git status', 'python --version').
         timeout: Maximum duration in seconds before killing the process.
     """
-    # Guard against destructive commands
-    for pattern in BLOCKED_COMMAND_PATTERNS:
-        if re.search(pattern, command, re.IGNORECASE):
-            return {
-                "command": command,
-                "exit_code": 1,
-                "stdout": "",
-                "stderr": f"Security restriction: Command matched blocked pattern '{pattern}'.",
-                "success": False,
-            }
-
-    try:
-        proc = subprocess.run(
-            command,
-            shell=True,
-            cwd=str(_file_manager.root_path),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        return {
-            "command": command,
-            "exit_code": proc.returncode,
-            "stdout": proc.stdout.strip(),
-            "stderr": proc.stderr.strip(),
-            "success": proc.returncode == 0,
-        }
-    except subprocess.TimeoutExpired:
-        return {
-            "command": command,
-            "exit_code": -1,
-            "stdout": "",
-            "stderr": f"Execution timed out after {timeout} seconds.",
-            "success": False,
-        }
-    except Exception as e:
-        return {
-            "command": command,
-            "exit_code": 1,
-            "stdout": "",
-            "stderr": str(e),
-            "success": False,
-        }
+    return command_sanitizer.run_sandboxed(command=command, timeout=timeout)
 
 
 def run_tests(test_target: str = "tests", timeout: int = 60) -> dict[str, Any]:
@@ -465,9 +430,13 @@ def get_tool_schemas() -> List[Dict[str, Any]]:
     return TOOL_SCHEMAS
 
 
-def execute_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def execute_tool(
+    name: str,
+    arguments: Optional[Dict[str, Any]] = None,
+    agent_role: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Dispatch and execute a tool by name with provided arguments.
+    Dispatch and execute a tool by name with provided arguments and optional role permissions.
 
     Returns:
         Structured result dict: {"tool": name, "success": bool, "result": Any, "error": Optional[str]}
@@ -482,6 +451,17 @@ def execute_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[
             "result": None,
             "error": f"Unknown tool: '{name}'. Available tools: {list(TOOL_REGISTRY.keys())}",
         }
+
+    if agent_role:
+        try:
+            permission_checker.enforce_permission(agent_role, name)
+        except PermissionDeniedError as pe:
+            return {
+                "tool": name,
+                "success": False,
+                "result": None,
+                "error": str(pe),
+            }
 
     try:
         result = tool_func(**arguments)
@@ -498,6 +478,10 @@ def execute_tool(name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[
             "result": None,
             "error": str(e),
         }
+
+
+# Backward-compatible alias
+dispatch_tool_call = execute_tool
 
 
 def parse_tool_call(response_text: str) -> Optional[Dict[str, Any]]:
