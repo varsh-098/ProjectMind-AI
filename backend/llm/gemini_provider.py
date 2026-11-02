@@ -74,6 +74,7 @@ Answer:
 """
 
 import httpx
+from typing import Optional
 from backend.llm.base import BaseLLMProvider
 from backend.config import settings
 
@@ -91,10 +92,15 @@ class GeminiProvider(BaseLLMProvider):
         - gemini-2.0-flash     (previous gen, still solid)
     """
 
-    def __init__(self):
-        self.api_key = settings.gemini_api_key
-        self.model = settings.gemini_model
-        self.timeout = settings.llm_timeout
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ):
+        self.api_key = api_key or settings.gemini_api_key
+        self.model = model or settings.gemini_model
+        self.timeout = timeout if timeout is not None else settings.llm_timeout
 
         if not self.api_key:
             raise ValueError(

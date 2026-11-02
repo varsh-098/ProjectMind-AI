@@ -45,6 +45,7 @@ try:
         enable_memory: bool = Field(default=True)
         enable_rag: bool = Field(default=True)
         tags: List[str] = Field(default_factory=list)
+        model_tier: str = Field(default="balanced")
         created_at: Optional[str] = None
         is_template: bool = False
 
@@ -54,6 +55,15 @@ try:
             clean = v.strip().lower().replace(" ", "_")
             if not clean.replace("_", "").isalnum():
                 raise ValueError(f"Agent name '{v}' must be alphanumeric with underscores.")
+            return clean
+
+        @field_validator("model_tier")
+        @classmethod
+        def validate_model_tier(cls, v: str) -> str:
+            clean = (v or "balanced").strip().lower()
+            valid_tiers = {"fast", "balanced", "complex", "local"}
+            if clean not in valid_tiers:
+                raise ValueError(f"Invalid model tier '{v}'. Must be one of: {sorted(list(valid_tiers))}")
             return clean
 
         @field_validator("allowed_tools")
@@ -88,6 +98,7 @@ except ImportError:
             tags: Optional[List[str]] = None,
             created_at: Optional[str] = None,
             is_template: bool = False,
+            model_tier: str = "balanced",
             **kwargs,
         ):
             # Validate name
@@ -106,6 +117,13 @@ except ImportError:
             self.system_instruction = system_instruction.strip()
 
             self.description = description.strip()
+
+            # Validate model tier
+            clean_tier = (model_tier or "balanced").strip().lower()
+            valid_tiers = {"fast", "balanced", "complex", "local"}
+            if clean_tier not in valid_tiers:
+                raise ValueError(f"Invalid model tier '{model_tier}'. Must be one of: {sorted(list(valid_tiers))}")
+            self.model_tier = clean_tier
 
             # Validate allowed_tools
             tools_list = allowed_tools or []
@@ -137,6 +155,7 @@ except ImportError:
                 "enable_memory": self.enable_memory,
                 "enable_rag": self.enable_rag,
                 "tags": list(self.tags),
+                "model_tier": self.model_tier,
                 "created_at": self.created_at,
                 "is_template": self.is_template,
             }
@@ -230,6 +249,7 @@ RULES:
         enable_memory=True,
         enable_rag=True,
         tags=["docs", "writing", "readme", "markdown", "architecture"],
+        model_tier="balanced",
         is_template=True,
     ),
     "security_auditor": AgentSpec(
@@ -258,6 +278,7 @@ RULES:
         enable_memory=True,
         enable_rag=True,
         tags=["security", "audit", "vulnerability", "safety", "cve"],
+        model_tier="complex",
         is_template=True,
     ),
     "refactoring_agent": AgentSpec(
@@ -286,6 +307,7 @@ RULES:
         enable_memory=True,
         enable_rag=True,
         tags=["refactor", "cleanup", "quality", "typing", "tests"],
+        model_tier="complex",
         is_template=True,
     ),
     "devops_agent": AgentSpec(
@@ -315,6 +337,7 @@ RULES:
         enable_memory=True,
         enable_rag=False,
         tags=["devops", "docker", "ci-cd", "automation", "deploy"],
+        model_tier="fast",
         is_template=True,
     ),
 }
@@ -405,8 +428,17 @@ class AgentBuilder:
         if not validated_spec.created_at:
             validated_spec.created_at = datetime.now(timezone.utc).isoformat()
 
-        # Instantiate agent
-        agent = CustomAgent(spec=validated_spec, llm_provider=llm_provider)
+        # Instantiate agent: if llm_provider not passed, resolve from model_registry
+        if llm_provider is not None:
+            effective_llm = llm_provider
+        else:
+            try:
+                from backend.llm.model_registry import model_registry
+                effective_llm = model_registry.get_provider_for_tier(validated_spec.model_tier)
+            except Exception:
+                effective_llm = None
+
+        agent = CustomAgent(spec=validated_spec, llm_provider=effective_llm)
 
         # Store in registry
         self._specs[validated_spec.name] = validated_spec

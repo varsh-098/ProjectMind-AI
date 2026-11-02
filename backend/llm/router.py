@@ -47,6 +47,8 @@ class ResilientLLMProvider(BaseLLMProvider):
         self,
         active_provider: Optional[str] = None,
         fallback_chain: Optional[List[str]] = None,
+        model_overrides: Optional[Dict[str, str]] = None,
+        active_tier: Optional[str] = None,
     ):
         self._active_provider = (
             active_provider or getattr(settings, "llm_provider", "groq")
@@ -62,6 +64,10 @@ class ResilientLLMProvider(BaseLLMProvider):
                     default_chain.append(p)
             self._fallback_chain = default_chain
 
+        self._model_overrides: Dict[str, str] = {
+            k.lower(): v for k, v in (model_overrides or {}).items()
+        }
+        self._active_tier = active_tier
         self._provider_instances: Dict[str, BaseLLMProvider] = {}
         self.last_execution_meta: Dict[str, Any] = {}
 
@@ -69,29 +75,37 @@ class ResilientLLMProvider(BaseLLMProvider):
     # Lazy Provider Instantiation
     # ------------------------------------------------------------------
 
-    def get_concrete_provider(self, name: str) -> Optional[BaseLLMProvider]:
+    def get_concrete_provider(
+        self,
+        name: str,
+        model: Optional[str] = None,
+    ) -> Optional[BaseLLMProvider]:
         """
         Lazily instantiate concrete providers. Avoids crashing at startup
         if one provider's optional API key is not yet set in .env.
+        Supports model-specific caching.
         """
         clean_name = name.strip().lower()
-        if clean_name in self._provider_instances:
-            return self._provider_instances[clean_name]
+        target_model = model or self._model_overrides.get(clean_name)
+        cache_key = f"{clean_name}:{target_model}" if target_model else clean_name
+
+        if cache_key in self._provider_instances:
+            return self._provider_instances[cache_key]
 
         try:
             if clean_name == "nemotron":
                 from backend.llm.nemotron import NemotronProvider
-                provider = NemotronProvider()
+                provider = NemotronProvider(model=target_model)
             elif clean_name == "groq":
                 from backend.llm.groq_provider import GroqProvider
-                provider = GroqProvider()
+                provider = GroqProvider(model=target_model)
             elif clean_name == "gemini":
                 from backend.llm.gemini_provider import GeminiProvider
-                provider = GeminiProvider()
+                provider = GeminiProvider(model=target_model)
             else:
                 return None
 
-            self._provider_instances[clean_name] = provider
+            self._provider_instances[cache_key] = provider
             return provider
 
         except Exception as e:
@@ -132,6 +146,8 @@ class ResilientLLMProvider(BaseLLMProvider):
             "active_provider": self._active_provider,
             "fallback_chain": list(self._fallback_chain),
             "supported_providers": list(self.SUPPORTED_PROVIDERS),
+            "active_tier": self._active_tier,
+            "model_overrides": dict(self._model_overrides),
             "last_execution": self.last_execution_meta,
         }
 
@@ -169,27 +185,54 @@ class ResilientLLMProvider(BaseLLMProvider):
         }
 
     # ------------------------------------------------------------------
-    # Resilient Chat with Automatic Failover
+    # Resilient Chat with Automatic Failover & Tier Specialization
     # ------------------------------------------------------------------
 
     async def chat(
         self,
         message: str,
         system_instruction: Optional[str] = None,
+        tier: Optional[str] = None,
+        task_type: Optional[str] = None,
     ) -> str:
         """
-        Execute chat request across the fallback chain with automatic failover.
+        Execute chat request across the fallback chain with automatic failover,
+        optionally routing via a specialized task tier.
         """
-        attempts = []
+        effective_tier = tier
+        if not effective_tier and task_type:
+            from backend.llm.model_registry import model_registry
+            effective_tier = model_registry.get_tier_for_task(task_type)
 
-        # Build order: active provider first, then remainder of chain
-        order = [self._active_provider]
-        for p in self._fallback_chain:
+        tier_profile = None
+        if effective_tier:
+            from backend.llm.model_registry import model_registry
+            tier_profile = model_registry.get_profile(effective_tier)
+
+        if tier_profile:
+            active = tier_profile.provider
+            chain = [active]
+            for p in tier_profile.fallback_chain:
+                if p not in chain:
+                    chain.append(p)
+            model_target = tier_profile.model_name
+        else:
+            active = self._active_provider
+            chain = self._fallback_chain
+            model_target = self._model_overrides.get(active)
+
+        attempts = []
+        order = [active]
+        for p in chain:
             if p not in order:
                 order.append(p)
 
         for provider_name in order:
-            provider = self.get_concrete_provider(provider_name)
+            chosen_model = (
+                model_target if (tier_profile and provider_name == tier_profile.provider)
+                else self._model_overrides.get(provider_name)
+            )
+            provider = self.get_concrete_provider(provider_name, model=chosen_model)
             if not provider:
                 attempts.append({
                     "provider": provider_name,
@@ -208,6 +251,9 @@ class ResilientLLMProvider(BaseLLMProvider):
 
                 self.last_execution_meta = {
                     "provider_used": provider_name,
+                    "model_used": getattr(provider, "model", chosen_model),
+                    "tier_used": effective_tier or self._active_tier,
+                    "task_type": task_type,
                     "latency_ms": latency_ms,
                     "fallbacks_attempted": attempts,
                     "success": True,
@@ -238,6 +284,8 @@ class ResilientLLMProvider(BaseLLMProvider):
         # If we reach here, all providers failed
         self.last_execution_meta = {
             "provider_used": None,
+            "tier_used": effective_tier or self._active_tier,
+            "task_type": task_type,
             "fallbacks_attempted": attempts,
             "success": False,
         }
@@ -253,12 +301,19 @@ class ResilientLLMProvider(BaseLLMProvider):
         self,
         message: str,
         system_instruction: Optional[str] = None,
+        tier: Optional[str] = None,
+        task_type: Optional[str] = None,
     ) -> str:
         """
         Synchronous wrapper for BaseAgent / non-async call sites.
         Safely bridges to the failover chain.
         """
-        coro = self.chat(message, system_instruction)
+        coro = self.chat(
+            message,
+            system_instruction=system_instruction,
+            tier=tier,
+            task_type=task_type,
+        )
         try:
             coro.send(None)
         except StopIteration as e:

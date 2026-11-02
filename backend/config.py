@@ -47,6 +47,16 @@ try:
         gemini_model: str = "gemini-2.5-flash"
         llm_timeout: int = 120
 
+        # Phase 22: Task-to-Model Specialization Tiers
+        tier_fast_provider: str = "groq"
+        tier_fast_model: str = "llama-3.3-70b-versatile"
+        tier_balanced_provider: str = "gemini"
+        tier_balanced_model: str = "gemini-2.5-flash"
+        tier_complex_provider: str = "gemini"
+        tier_complex_model: str = "gemini-2.5-pro"
+        tier_local_provider: str = "nemotron"
+        tier_local_model: str = "nemotron"
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -68,5 +78,15 @@ except ImportError:
             self.gemini_api_key = os.getenv("GEMINI_API_KEY") or env_map.get("gemini_api_key")
             self.gemini_model = os.getenv("GEMINI_MODEL") or env_map.get("gemini_model", "gemini-2.5-flash")
             self.llm_timeout = int(os.getenv("LLM_TIMEOUT") or env_map.get("llm_timeout", "120"))
+
+            # Phase 22: Task-to-Model Specialization Tiers
+            self.tier_fast_provider = os.getenv("TIER_FAST_PROVIDER") or env_map.get("tier_fast_provider", "groq")
+            self.tier_fast_model = os.getenv("TIER_FAST_MODEL") or env_map.get("tier_fast_model", "llama-3.3-70b-versatile")
+            self.tier_balanced_provider = os.getenv("TIER_BALANCED_PROVIDER") or env_map.get("tier_balanced_provider", "gemini")
+            self.tier_balanced_model = os.getenv("TIER_BALANCED_MODEL") or env_map.get("tier_balanced_model", "gemini-2.5-flash")
+            self.tier_complex_provider = os.getenv("TIER_COMPLEX_PROVIDER") or env_map.get("tier_complex_provider", "gemini")
+            self.tier_complex_model = os.getenv("TIER_COMPLEX_MODEL") or env_map.get("tier_complex_model", "gemini-2.5-pro")
+            self.tier_local_provider = os.getenv("TIER_LOCAL_PROVIDER") or env_map.get("tier_local_provider", "nemotron")
+            self.tier_local_model = os.getenv("TIER_LOCAL_MODEL") or env_map.get("tier_local_model", "nemotron")
 
     settings = FallbackSettings()

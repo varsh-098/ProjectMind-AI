@@ -60,18 +60,40 @@ class Supervisor:
         llm_provider: Optional[BaseLLMProvider] = None,
         rag_index: Optional[ProjectRAGIndex] = None,
         load_custom_agents: bool = True,
+        use_tier_routing: bool = True,
     ):
-        try:
-            self.llm = llm_provider or get_llm_provider()
-        except Exception:
-            self.llm = None
-
         self.rag_index = rag_index or ProjectRAGIndex()
+        self.use_tier_routing = use_tier_routing
 
-        # Instantiate built-in specialized agents
-        self.coding_agent = CodingAgent(llm_provider=self.llm)
-        self.review_agent = ReviewAgent(llm_provider=self.llm)
-        self.testing_agent = TestingAgent(llm_provider=self.llm)
+        if llm_provider is not None:
+            # Explicit override (e.g. from tests or caller)
+            self.llm = llm_provider
+            coding_llm = llm_provider
+            review_llm = llm_provider
+            testing_llm = llm_provider
+        elif use_tier_routing:
+            # Phase 22: Task-to-Model Specialization Tiers
+            try:
+                from backend.llm.model_registry import model_registry
+                self.llm = model_registry.get_provider_for_task("routing")
+                coding_llm = model_registry.get_provider_for_task("coding")
+                review_llm = model_registry.get_provider_for_task("review")
+                testing_llm = model_registry.get_provider_for_task("testing")
+            except Exception:
+                self.llm = get_llm_provider()
+                coding_llm = self.llm
+                review_llm = self.llm
+                testing_llm = self.llm
+        else:
+            self.llm = get_llm_provider()
+            coding_llm = self.llm
+            review_llm = self.llm
+            testing_llm = self.llm
+
+        # Instantiate built-in specialized agents with their respective tier models
+        self.coding_agent = CodingAgent(llm_provider=coding_llm)
+        self.review_agent = ReviewAgent(llm_provider=review_llm)
+        self.testing_agent = TestingAgent(llm_provider=testing_llm)
 
         self.agent_registry: Dict[str, BaseAgent] = {
             "coding": self.coding_agent,
@@ -97,6 +119,29 @@ class Supervisor:
         """
         clean_name = name.strip().lower().replace(" ", "_")
         self.agent_registry[clean_name] = agent
+
+    def classify_intent_llm(self, user_prompt: str) -> Dict[str, Any]:
+        """
+        Use the specialized FAST tier LLM to classify ambiguous queries.
+        Falls back to rule-based classify_intent if LLM is unavailable or fails.
+        """
+        if not self.llm:
+            return self.classify_intent(user_prompt)
+
+        try:
+            prompt = f"{SUPERVISOR_ROUTER_PROMPT}\n\nUSER REQUEST: {user_prompt}\nRESPONSE (JSON):"
+            if hasattr(self.llm, "chat_sync"):
+                response = self.llm.chat_sync(prompt)
+            else:
+                response = None
+            if response:
+                clean_json = re.search(r"\{.*\}", response, re.DOTALL)
+                if clean_json:
+                    return json.loads(clean_json.group(0))
+        except Exception:
+            pass
+
+        return self.classify_intent(user_prompt)
 
     def classify_intent(self, user_prompt: str) -> Dict[str, Any]:
         """

@@ -61,6 +61,7 @@ THE RESPONSE FORMAT:
 """
 
 import httpx
+from typing import Optional
 from backend.llm.base import BaseLLMProvider
 from backend.config import settings
 
@@ -73,17 +74,19 @@ class NemotronProvider(BaseLLMProvider):
     endpoint that llama-server exposes.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ):
         """
-        Initialize the provider with settings from config.
-
-        We build the full URL here once, rather than constructing
-        it on every request. Small optimization, but also makes
-        the code clearer.
+        Initialize the provider with settings from config or explicit overrides.
         """
-        self.base_url = settings.nemotron_base_url.rstrip("/")
-        self.model = settings.nemotron_model
-        self.timeout = settings.llm_timeout
+        raw_url = base_url or settings.nemotron_base_url
+        self.base_url = raw_url.rstrip("/")
+        self.model = model or settings.nemotron_model
+        self.timeout = timeout if timeout is not None else settings.llm_timeout
 
         # The endpoint llama-server exposes for chat completions.
         # This is the same path OpenAI uses.
