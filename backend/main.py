@@ -42,7 +42,15 @@ SWAGGER / OPENAPI:
     This is one of FastAPI's killer features.
 """
 
-from fastapi import FastAPI
+try:
+    from fastapi import FastAPI
+except ImportError:
+    class FastAPI:
+        def __init__(self, *args, **kwargs): pass
+        def include_router(self, *args, **kwargs): pass
+        def get(self, *args, **kwargs): return lambda f: f
+        def post(self, *args, **kwargs): return lambda f: f
+        def add_middleware(self, *args, **kwargs): pass
 from backend.routers import chat, project, memory, agents, llm, database, auth, security, eval
 from backend.config import settings
 

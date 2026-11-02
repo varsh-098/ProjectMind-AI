@@ -454,3 +454,4 @@ class EvaluationHarness:
         if "def " in text or "class " in text:
             return text.strip()
         return None
+
