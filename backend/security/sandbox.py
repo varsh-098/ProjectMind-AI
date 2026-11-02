@@ -267,3 +267,4 @@ class CommandSanitizer:
 # Global singleton instances
 workspace_sandbox = WorkspaceSandbox()
 command_sanitizer = CommandSanitizer()
+

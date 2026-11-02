@@ -197,3 +197,4 @@ class CodeSecurityValidator(ast.NodeVisitor):
 
 # Global singleton validator
 ast_validator = CodeSecurityValidator()
+

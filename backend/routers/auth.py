@@ -192,7 +192,7 @@ class AuthResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user account",
 )
-async def register(req: RegisterRequest, request: Optional[Request] = None) -> Dict[str, Any]:
+async def register(req: RegisterRequest, request: Request = None) -> Dict[str, Any]:
     """
     Register a new user account.
     Validates origin, credentials, normalizes identifiers, hashes password with Argon2id,
@@ -232,7 +232,7 @@ async def register(req: RegisterRequest, request: Optional[Request] = None) -> D
     "/login",
     summary="Authenticate user and issue HttpOnly session cookie",
 )
-async def login(req: LoginRequest, response: Response, request: Optional[Request] = None) -> Dict[str, Any]:
+async def login(req: LoginRequest, response: Response, request: Request = None) -> Dict[str, Any]:
     """
     Authenticate user using Argon2id.
     Validates origin, issues a cryptographically secure random session token,

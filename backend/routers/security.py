@@ -156,3 +156,4 @@ async def get_security_policy() -> Dict[str, Any]:
             k: [p.value for p in v] for k, v in DEFAULT_ROLE_PERMISSIONS.items()
         },
     }
+

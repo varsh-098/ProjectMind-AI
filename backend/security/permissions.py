@@ -149,3 +149,4 @@ class PermissionChecker:
 
 # Global singleton instance
 permission_checker = PermissionChecker()
+
