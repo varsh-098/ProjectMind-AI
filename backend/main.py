@@ -43,7 +43,7 @@ SWAGGER / OPENAPI:
 """
 
 from fastapi import FastAPI
-from backend.routers import chat, project, memory, agents, llm
+from backend.routers import chat, project, memory, agents, llm, database
 
 # -------------------------------------------------------
 # Create the FastAPI application
@@ -79,6 +79,7 @@ app.include_router(project.router)
 app.include_router(memory.router)
 app.include_router(agents.router)
 app.include_router(llm.router)
+app.include_router(database.router)
 
 
 # -------------------------------------------------------

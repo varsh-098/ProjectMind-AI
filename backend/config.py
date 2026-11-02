@@ -57,6 +57,10 @@ try:
         tier_local_provider: str = "nemotron"
         tier_local_model: str = "nemotron"
 
+        # Phase 23: MongoDB Atlas Persistence
+        mongodb_uri: str | None = None
+        mongodb_db_name: str = "projectmind"
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -88,5 +92,9 @@ except ImportError:
             self.tier_complex_model = os.getenv("TIER_COMPLEX_MODEL") or env_map.get("tier_complex_model", "gemini-2.5-pro")
             self.tier_local_provider = os.getenv("TIER_LOCAL_PROVIDER") or env_map.get("tier_local_provider", "nemotron")
             self.tier_local_model = os.getenv("TIER_LOCAL_MODEL") or env_map.get("tier_local_model", "nemotron")
+
+            # Phase 23: MongoDB Atlas Persistence
+            self.mongodb_uri = os.getenv("MONGODB_URI") or env_map.get("mongodb_uri")
+            self.mongodb_db_name = os.getenv("MONGODB_DB_NAME") or env_map.get("mongodb_db_name", "projectmind")
 
     settings = FallbackSettings()

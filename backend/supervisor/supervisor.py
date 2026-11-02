@@ -232,9 +232,15 @@ class Supervisor:
             "reasoning": "General development query routed to Coding Agent by default.",
         }
 
-    def execute(self, user_prompt: str) -> Dict[str, Any]:
+    def execute(
+        self,
+        user_prompt: str,
+        session_id: Optional[str] = None,
+        persist_run: bool = True,
+    ) -> Dict[str, Any]:
         """
         Orchestrate and execute the user's task across the dynamically routed pipeline.
+        Optionally persists the run trace to MongoDB Atlas.
         """
         routing_plan = self.classify_intent(user_prompt)
         intent = routing_plan["intent"]
@@ -243,7 +249,8 @@ class Supervisor:
         # Strategy 1: Direct Memory Route (Zero LLM / Token Overhead)
         if intent == "MEMORY":
             memory_results = tools.search_project_memory(user_prompt, top_k=3)
-            return {
+            summary = f"Retrieved {len(memory_results)} memory facts and decisions directly without invoking agent loops."
+            payload = {
                 "task": user_prompt,
                 "intent": intent,
                 "routing_plan": routing_plan,
@@ -254,9 +261,27 @@ class Supervisor:
                         "matches": memory_results,
                     }
                 },
-                "summary": f"Retrieved {len(memory_results)} memory facts and decisions directly without invoking agent loops.",
+                "summary": summary,
                 "success": True,
             }
+
+            if persist_run:
+                try:
+                    from backend.db import repository
+                    saved = repository.record_agent_run(
+                        task=user_prompt,
+                        intent=intent,
+                        stages=["memory"],
+                        results=payload["results"],
+                        summary=summary,
+                        success=True,
+                        session_id=session_id,
+                    )
+                    payload["run_id"] = saved.get("run_id")
+                except Exception:
+                    pass
+
+            return payload
 
         # Strategy 2: Single-Agent or Multi-Agent Pipeline Execution
         stage_results: Dict[str, Any] = {}
@@ -285,10 +310,10 @@ class Supervisor:
         # Synthesize final summary
         summary = (
             f"Supervisor successfully coordinated {len(pipeline)} agent(s) "
-            f"({' → '.join(pipeline)}) to complete the task."
+            f"({' -> '.join(pipeline)}) to complete the task."
         )
 
-        return {
+        payload = {
             "task": user_prompt,
             "intent": intent,
             "routing_plan": routing_plan,
@@ -297,3 +322,21 @@ class Supervisor:
             "summary": summary,
             "success": True,
         }
+
+        if persist_run:
+            try:
+                from backend.db import repository
+                saved = repository.record_agent_run(
+                    task=user_prompt,
+                    intent=intent,
+                    stages=pipeline,
+                    results=stage_results,
+                    summary=summary,
+                    success=True,
+                    session_id=session_id,
+                )
+                payload["run_id"] = saved.get("run_id")
+            except Exception:
+                pass
+
+        return payload
