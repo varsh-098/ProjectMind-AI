@@ -140,6 +140,7 @@ class TestAgentBuilder(unittest.TestCase):
             allowed_tools=["read_file"],
         )
         agent = self.builder.build_agent(spec=spec, save=False)
+        agent.llm = None  # Explicitly set to None for offline test
         result = agent.run("Please inspect backend/config.py")
         self.assertTrue(result["success"])
         self.assertEqual(result["agent"], "offline_agent")

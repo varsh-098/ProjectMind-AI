@@ -65,35 +65,31 @@ class GroqProvider(BaseLLMProvider):
         # Groq's OpenAI-compatible endpoint
         self.chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
-    async def chat(self, message: str) -> str:
+    async def chat(
+        self,
+        message: str,
+        system_instruction: str | None = None,
+    ) -> str:
         """
         Send a message to Groq and return the response.
-
-        The request format is identical to llama-server (OpenAI format).
-        The only additions are:
-            - The URL points to Groq's cloud instead of localhost
-            - We include an Authorization header with the API key
-
-        Why Authorization header?
-            llama-server runs locally — no auth needed, it's your machine.
-            Groq is a remote service — they need to verify who you are
-            and track your usage. The Bearer token does that.
         """
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
+        sys_prompt = system_instruction or (
+            "You are ProjectMind AI, a helpful and knowledgeable "
+            "AI development assistant. Provide clear, concise, "
+            "and accurate responses."
+        )
+
         request_body = {
             "model": self.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You are ProjectMind AI, a helpful and knowledgeable "
-                        "AI development assistant. Provide clear, concise, "
-                        "and accurate responses."
-                    ),
+                    "content": sys_prompt,
                 },
                 {
                     "role": "user",
@@ -126,6 +122,36 @@ class GroqProvider(BaseLLMProvider):
             )
 
         return content
+
+    async def health_check(self) -> dict:
+        """Probe Groq API to verify key and network connectivity."""
+        import time
+        t0 = time.perf_counter()
+        try:
+            headers = {"Authorization": f"Bearer {self.api_key}"}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get("https://api.groq.com/openai/v1/models", headers=headers)
+                latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+                if res.status_code == 200:
+                    return {
+                        "provider": "groq",
+                        "status": "online",
+                        "model": self.model,
+                        "latency_ms": latency_ms,
+                    }
+                return {
+                    "provider": "groq",
+                    "status": "offline",
+                    "status_code": res.status_code,
+                    "error": f"HTTP {res.status_code}: {res.text[:100]}",
+                }
+        except Exception as e:
+            return {
+                "provider": "groq",
+                "status": "offline",
+                "error": str(e),
+                "model": self.model,
+            }
 
 
 # ============================================================

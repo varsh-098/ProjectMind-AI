@@ -112,35 +112,31 @@ class GeminiProvider(BaseLLMProvider):
             "/v1beta/openai/chat/completions"
         )
 
-    async def chat(self, message: str) -> str:
+    async def chat(
+        self,
+        message: str,
+        system_instruction: str | None = None,
+    ) -> str:
         """
         Send a message to Gemini and return the response.
-
-        The request format is IDENTICAL to Groq and Nemotron.
-        Compare this method with groq_provider.py and nemotron.py —
-        the only difference is the URL and the auth header.
-
-        Why Authorization: Bearer?
-            Same as Groq. Google AI Studio issues API keys, and
-            the Bearer token format is the standard way to authenticate
-            with cloud APIs. All three cloud providers (OpenAI, Groq,
-            Google) use this exact same authentication pattern.
         """
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
+        sys_prompt = system_instruction or (
+            "You are ProjectMind AI, a helpful and knowledgeable "
+            "AI development assistant. Provide clear, concise, "
+            "and accurate responses."
+        )
+
         request_body = {
             "model": self.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You are ProjectMind AI, a helpful and knowledgeable "
-                        "AI development assistant. Provide clear, concise, "
-                        "and accurate responses."
-                    ),
+                    "content": sys_prompt,
                 },
                 {
                     "role": "user",
@@ -160,7 +156,6 @@ class GeminiProvider(BaseLLMProvider):
             data = response.json()
 
         # Same response format as Groq and Nemotron (OpenAI-compatible)
-        # data["choices"][0]["message"]["content"]
         choices = data.get("choices")
         if not choices:
             raise ValueError(
@@ -174,6 +169,39 @@ class GeminiProvider(BaseLLMProvider):
             )
 
         return content
+
+    async def health_check(self) -> dict:
+        """Probe Gemini API to verify key and Google AI Studio availability."""
+        import time
+        t0 = time.perf_counter()
+        try:
+            headers = {"Authorization": f"Bearer {self.api_key}"}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get(
+                    "https://generativelanguage.googleapis.com/v1beta/openai/models",
+                    headers=headers,
+                )
+                latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+                if res.status_code == 200:
+                    return {
+                        "provider": "gemini",
+                        "status": "online",
+                        "model": self.model,
+                        "latency_ms": latency_ms,
+                    }
+                return {
+                    "provider": "gemini",
+                    "status": "offline",
+                    "status_code": res.status_code,
+                    "error": f"HTTP {res.status_code}: {res.text[:100]}",
+                }
+        except Exception as e:
+            return {
+                "provider": "gemini",
+                "status": "offline",
+                "error": str(e),
+                "model": self.model,
+            }
 
 
 # ============================================================

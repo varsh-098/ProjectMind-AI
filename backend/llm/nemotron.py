@@ -89,50 +89,26 @@ class NemotronProvider(BaseLLMProvider):
         # This is the same path OpenAI uses.
         self.chat_url = f"{self.base_url}/v1/chat/completions"
 
-    async def chat(self, message: str) -> str:
+    async def chat(
+        self,
+        message: str,
+        system_instruction: str | None = None,
+    ) -> str:
         """
         Send a message to Nemotron via llama-server and return the response.
-
-        What happens step by step:
-            1. Build the request body (OpenAI chat format)
-            2. Send an async HTTP POST to llama-server
-            3. Check for HTTP errors (4xx, 5xx)
-            4. Parse the JSON response
-            5. Extract and return the generated text
-
-        Why httpx.AsyncClient?
-            httpx is the async equivalent of the `requests` library.
-            We use `async with` to create a client that:
-            - Opens a connection
-            - Sends the request
-            - Waits for the response WITHOUT blocking other requests
-            - Automatically closes the connection when done
-
-        Args:
-            message: The user's input text.
-
-        Returns:
-            The generated response text from Nemotron.
-
-        Raises:
-            httpx.HTTPStatusError: If llama-server returns 4xx/5xx
-            httpx.ConnectError: If llama-server is not running
-            httpx.TimeoutException: If the request takes too long
-            ValueError: If the response format is unexpected
         """
+        sys_prompt = system_instruction or (
+            "You are ProjectMind AI, a helpful and knowledgeable "
+            "AI development assistant. Provide clear, concise, "
+            "and accurate responses."
+        )
 
-        # Build the request body in OpenAI chat completions format.
-        # llama-server expects exactly this structure.
         request_body = {
             "model": self.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You are ProjectMind AI, a helpful and knowledgeable "
-                        "AI development assistant. Provide clear, concise, "
-                        "and accurate responses."
-                    ),
+                    "content": sys_prompt,
                 },
                 {
                     "role": "user",
@@ -193,6 +169,36 @@ class NemotronProvider(BaseLLMProvider):
             )
 
         return content
+
+    async def health_check(self) -> dict[str, Any]:
+        """Probe llama-server endpoint to test if local model is online."""
+        import time
+        t0 = time.perf_counter()
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                res = await client.get(f"{self.base_url}/health")
+                latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+                if res.status_code == 200:
+                    return {
+                        "provider": "nemotron",
+                        "status": "online",
+                        "model": self.model,
+                        "base_url": self.base_url,
+                        "latency_ms": latency_ms,
+                    }
+                return {
+                    "provider": "nemotron",
+                    "status": "offline",
+                    "status_code": res.status_code,
+                    "error": f"HTTP {res.status_code}",
+                }
+        except Exception as e:
+            return {
+                "provider": "nemotron",
+                "status": "offline",
+                "error": str(e),
+                "base_url": self.base_url,
+            }
 
 
 # ============================================================

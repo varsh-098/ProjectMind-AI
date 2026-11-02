@@ -139,11 +139,23 @@ class BaseAgent:
                     "success": True,
                 }
 
-            # Call LLM
-            response_text = self.llm.chat(
-                message=current_input,
-                system_instruction=system_prompt,
-            )
+            # Call LLM (supports both async and sync providers)
+            import inspect
+            if hasattr(self.llm, 'chat_sync'):
+                response_text = self.llm.chat_sync(
+                    message=current_input,
+                    system_instruction=system_prompt,
+                )
+            else:
+                call_res = self.llm.chat(
+                    message=current_input,
+                    system_instruction=system_prompt,
+                )
+                if inspect.iscoroutine(call_res):
+                    import asyncio
+                    response_text = asyncio.run(call_res)
+                else:
+                    response_text = call_res
 
             # Check if LLM requested a tool call
             tool_call = tools.parse_tool_call(response_text)
