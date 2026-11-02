@@ -7,23 +7,17 @@ HOW IT WORKS:
     1. User submits a request (e.g. "Fix the login bug and run tests").
     2. Intent Classification: The Supervisor analyzes user intent:
        - Direct Memory/Fact lookup (0 agent overhead)
-       - Single-Agent routing: CODING, REVIEW, or TESTING
+       - Single-Agent routing: CODING, REVIEW, TESTING, or CUSTOM agents
        - Multi-Agent Pipeline: Sequential execution (e.g. Coding → Testing → Review)
     3. Dynamic Orchestration: Dispatches only the required agents.
     4. Synthesis: Consolidates outputs from all stages into a unified executive report.
-
-WHY DYNAMIC ROUTING MATTERS:
-    Activating every agent for every query wastes compute, increases latency,
-    and causes hallucinated interventions. Dynamic routing ensures:
-      "What DB do we use?"      → Instant Memory lookup (0 tokens)
-      "Review my auth module"   → Review Agent only
-      "Write a test for utils"  → Testing Agent only
-      "Fix bug and verify"      → Sequential: Coding Agent → Testing Agent
+    5. Agent Builder Integration: Dynamically routes to custom agents built via Phase 20!
 """
 
 import re
 import json
 from typing import Dict, Any, List, Optional
+from backend.agents.base_agent import BaseAgent
 from backend.agents.coding_agent import CodingAgent
 from backend.agents.review_agent import ReviewAgent
 from backend.agents.testing_agent import TestingAgent
@@ -42,12 +36,13 @@ AVAILABLE ROUTING DESTINATIONS:
 2. "CODING": For generating code, fixing bugs, refactoring, or feature implementations.
 3. "REVIEW": For code quality audits, security scans, or pull request reviews.
 4. "TESTING": For running test suites, analyzing test failures, or writing unit tests.
-5. "PIPELINE": For multi-step tasks requiring multiple agents (e.g. "fix bug AND run tests").
+5. "CUSTOM": For specialized custom agents (e.g. documentation, security audit).
+6. "PIPELINE": For multi-step tasks requiring multiple agents (e.g. "fix bug AND run tests").
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object:
 {
-  "intent": "MEMORY" | "CODING" | "REVIEW" | "TESTING" | "PIPELINE",
+  "intent": "MEMORY" | "CODING" | "REVIEW" | "TESTING" | "CUSTOM" | "PIPELINE",
   "pipeline": ["coding", "testing"],  // list of agent names to execute in sequence
   "reasoning": "Brief explanation of routing decision"
 }
@@ -57,13 +52,14 @@ Return ONLY a valid JSON object:
 class Supervisor:
     """
     Central orchestrator responsible for analyzing user intent and dynamically
-    dispatching specialized agents.
+    dispatching specialized built-in and custom agents.
     """
 
     def __init__(
         self,
         llm_provider: Optional[BaseLLMProvider] = None,
         rag_index: Optional[ProjectRAGIndex] = None,
+        load_custom_agents: bool = True,
     ):
         try:
             self.llm = llm_provider or get_llm_provider()
@@ -72,25 +68,44 @@ class Supervisor:
 
         self.rag_index = rag_index or ProjectRAGIndex()
 
-        # Instantiate specialized agents
+        # Instantiate built-in specialized agents
         self.coding_agent = CodingAgent(llm_provider=self.llm)
         self.review_agent = ReviewAgent(llm_provider=self.llm)
         self.testing_agent = TestingAgent(llm_provider=self.llm)
 
-        self.agent_registry = {
+        self.agent_registry: Dict[str, BaseAgent] = {
             "coding": self.coding_agent,
             "review": self.review_agent,
             "testing": self.testing_agent,
         }
 
+        # Dynamically load custom agents from AgentBuilder (Phase 20)
+        if load_custom_agents:
+            self._load_builder_agents()
+
+    def _load_builder_agents(self) -> None:
+        """Register custom agents from the global AgentBuilder registry."""
+        try:
+            from backend.agents.builder import default_agent_builder
+            default_agent_builder.register_all_with_supervisor(self)
+        except Exception:
+            pass
+
+    def register_agent(self, name: str, agent: BaseAgent) -> None:
+        """
+        Dynamically register a new custom agent with the supervisor at runtime.
+        """
+        clean_name = name.strip().lower().replace(" ", "_")
+        self.agent_registry[clean_name] = agent
+
     def classify_intent(self, user_prompt: str) -> Dict[str, Any]:
         """
         Determine the intent and required execution pipeline for a user request.
-        Uses LLM reasoning when available, with a fast deterministic classifier fallback.
+        Uses fast deterministic classifier patterns, matching custom agent tags and keywords.
         """
         text = user_prompt.lower()
 
-        # Fast deterministic classifier patterns
+        # 1. Check for Direct Memory questions
         is_memory = any(k in text for k in [
             "what database", "what db", "which framework", "conventions", "tech stack",
             "what llm", "what models", "remembered", "decision", "adr"
@@ -99,14 +114,41 @@ class Supervisor:
         wants_testing = any(k in text for k in ["run test", "run tests", "pytest", "unit test", "test suite"])
         wants_coding = any(k in text for k in ["fix", "bug", "implement", "create function", "refactor", "code", "write"])
 
-        # Determine pipeline
-        if is_memory and not (wants_coding or wants_review):
+        # Check for specialized custom agents (Phase 20)
+        wants_docs = any(k in text for k in ["document", "documentation", "docstring", "readme", "api docs"])
+        wants_security = any(k in text for k in ["security audit", "vulnerability scan", "cve", "secret leak", "sql injection"])
+        wants_devops = any(k in text for k in ["docker", "dockerfile", "ci/cd", "github actions", "deploy script"])
+
+        if is_memory and not (wants_coding or wants_review or wants_docs or wants_security):
             return {
                 "intent": "MEMORY",
                 "pipeline": ["memory"],
                 "reasoning": "Factual question about project architecture or memory.",
             }
 
+        # Match custom agents first if registered
+        if wants_docs and "documentation_agent" in self.agent_registry:
+            return {
+                "intent": "CUSTOM",
+                "pipeline": ["documentation_agent"],
+                "reasoning": "Documentation request routed to specialized Documentation Agent.",
+            }
+
+        if wants_security and "security_auditor" in self.agent_registry:
+            return {
+                "intent": "CUSTOM",
+                "pipeline": ["security_auditor"],
+                "reasoning": "Security audit request routed to specialized Security Auditor Agent.",
+            }
+
+        if wants_devops and "devops_agent" in self.agent_registry:
+            return {
+                "intent": "CUSTOM",
+                "pipeline": ["devops_agent"],
+                "reasoning": "DevOps / containerization task routed to DevOps Agent.",
+            }
+
+        # Multi-Agent Pipeline check
         pipeline = []
         if wants_coding:
             pipeline.append("coding")
@@ -128,6 +170,15 @@ class Supervisor:
                 "pipeline": pipeline,
                 "reasoning": f"Specialized single-agent task routed to {pipeline[0]}.",
             }
+
+        # Check any other custom agent registered by name
+        for agent_name in self.agent_registry.keys():
+            if agent_name not in ("coding", "review", "testing") and agent_name in text:
+                return {
+                    "intent": "CUSTOM",
+                    "pipeline": [agent_name],
+                    "reasoning": f"Explicitly named custom agent '{agent_name}'.",
+                }
 
         # Default fallback
         return {

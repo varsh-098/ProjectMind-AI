@@ -30,6 +30,7 @@ import os
 import json
 
 # ── Path Setup ──
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 script_dir = os.path.dirname(os.path.abspath(__file__))
 projectmind_dir = os.path.dirname(script_dir)
 workspace_root = os.path.dirname(projectmind_dir)

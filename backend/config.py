@@ -5,92 +5,68 @@ Centralized configuration for ProjectMind AI.
 
 WHY CENTRALIZED CONFIG?
 Every part of the app needs settings — the LLM URL, the provider name, etc.
-If you scatter os.getenv("...") calls throughout the codebase, you get:
-  - No validation (typos in env var names silently return None)
-  - No defaults documented anywhere
-  - No single place to see what the app is configured to do
-
-Instead, we define ONE Settings class here. It reads the .env file once
-at startup, validates the values, applies defaults, and makes them available
-throughout the app as `from backend.config import settings`.
-
-HOW IT WORKS:
-pydantic-settings reads environment variables (and optionally a .env file)
-and maps them to typed Python attributes on your class.
-
-Example: if your .env has LLM_PROVIDER=nemotron, then settings.llm_provider == "nemotron".
-If the variable is missing, pydantic uses the default you specify.
-If you declare it as required (no default), pydantic raises a clear error at startup.
+Instead of scattering os.getenv calls, we define ONE Settings class here.
+It reads the .env file once at startup, validates values, applies defaults,
+and makes them available throughout the app as `from backend.config import settings`.
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+from pathlib import Path
 
 
-class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables / .env file.
+def _load_env_file() -> dict[str, str]:
+    """Fallback reader for .env file when pydantic-settings is unavailable."""
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        env_path = Path(".env")
 
-    Pydantic automatically reads environment variables whose names match
-    the attribute names (case-insensitive).
-    """
-
-    # -------------------------------------------------------
-    # LLM Provider
-    # -------------------------------------------------------
-    # Which LLM backend to use. The factory (llm/factory.py) reads
-    # this and returns the correct provider object.
-    # Default: "nemotron" (local llama-server)
-    llm_provider: str = "nemotron"
-
-    # -------------------------------------------------------
-    # Nemotron (local llama-server) settings
-    # -------------------------------------------------------
-    # llama-server listens on this URL. Default port is 8080.
-    nemotron_base_url: str = "http://localhost:8080"
-
-    # The model name to pass in API requests.
-    # llama-server accepts any string here if you didn't set --alias.
-    # You can also set it to "default" if your server ignores the model field.
-    nemotron_model: str = "nemotron"
-
-    # -------------------------------------------------------
-    # Groq (cloud API) settings
-    # -------------------------------------------------------
-    # API key from https://console.groq.com/keys
-    # Default: None — only required when LLM_PROVIDER=groq
-    groq_api_key: str | None = None
-
-    # Which model to use on Groq.
-    # Popular options: llama-3.3-70b-versatile, mixtral-8x7b-32768, gemma2-9b-it
-    groq_model: str = "llama-3.3-70b-versatile"
-
-    # -------------------------------------------------------
-    # Gemini (Google AI Studio) settings
-    # -------------------------------------------------------
-    # API key from https://aistudio.google.com/
-    # Default: None — only required when LLM_PROVIDER=gemini
-    gemini_api_key: str | None = None
-
-    # Which model to use on Gemini.
-    # Popular options: gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash
-    gemini_model: str = "gemini-2.5-flash"
-
-    # Timeout in seconds for LLM requests.
-    # Local models (Nemotron) need more time. Cloud (Groq) is usually fast.
-    llm_timeout: int = 120
-
-    # Pydantic v2 uses a dict for config, not a nested class.
-    # SettingsConfigDict is specific to pydantic-settings and supports env_file.
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
+    env_map = {}
+    if env_path.exists():
+        try:
+            for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    env_map[k.strip().lower()] = v.strip().strip("\"'")
+        except Exception:
+            pass
+    return env_map
 
 
-# -------------------------------------------------------
-# Singleton instance
-# -------------------------------------------------------
-# Imported everywhere as: from backend.config import settings
-# Created once at module load time. Reads .env immediately.
-settings = Settings()
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+
+    class Settings(BaseSettings):
+        """Application settings loaded from environment variables / .env file."""
+        llm_provider: str = "nemotron"
+        nemotron_base_url: str = "http://localhost:8080"
+        nemotron_model: str = "nemotron"
+        groq_api_key: str | None = None
+        groq_model: str = "llama-3.3-70b-versatile"
+        gemini_api_key: str | None = None
+        gemini_model: str = "gemini-2.5-flash"
+        llm_timeout: int = 120
+
+        model_config = SettingsConfigDict(
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
+
+    settings = Settings()
+
+except ImportError:
+    # Graceful fallback when pydantic-settings is not installed in the active environment
+    class FallbackSettings:
+        def __init__(self):
+            env_map = _load_env_file()
+            self.llm_provider = os.getenv("LLM_PROVIDER") or env_map.get("llm_provider", "nemotron")
+            self.nemotron_base_url = os.getenv("NEMOTRON_BASE_URL") or env_map.get("nemotron_base_url", "http://localhost:8080")
+            self.nemotron_model = os.getenv("NEMOTRON_MODEL") or env_map.get("nemotron_model", "nemotron")
+            self.groq_api_key = os.getenv("GROQ_API_KEY") or env_map.get("groq_api_key")
+            self.groq_model = os.getenv("GROQ_MODEL") or env_map.get("groq_model", "llama-3.3-70b-versatile")
+            self.gemini_api_key = os.getenv("GEMINI_API_KEY") or env_map.get("gemini_api_key")
+            self.gemini_model = os.getenv("GEMINI_MODEL") or env_map.get("gemini_model", "gemini-2.5-flash")
+            self.llm_timeout = int(os.getenv("LLM_TIMEOUT") or env_map.get("llm_timeout", "120"))
+
+    settings = FallbackSettings()

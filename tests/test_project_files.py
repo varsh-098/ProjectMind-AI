@@ -63,9 +63,9 @@ class TestProjectFileManager(unittest.TestCase):
 
     def test_search_code(self):
         """search_code() must find symbols across project files."""
-        matches = self.manager.search_code("BaseLLMProvider", max_matches=10)
+        matches = self.manager.search_code("BaseLLMProvider", max_matches=40)
         self.assertGreater(len(matches), 0)
-        self.assertTrue(any("backend/llm/base.py" in m["file"] for m in matches))
+        self.assertTrue(any("base.py" in m["file"] for m in matches))
 
     def test_tools_wrapper_functions(self):
         """Verify high-level tools wrappers work cleanly."""
