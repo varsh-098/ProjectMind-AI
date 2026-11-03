@@ -95,6 +95,7 @@ class BaseAgent:
         user_prompt: str,
         rag_index: Optional[ProjectRAGIndex] = None,
         top_k_rag: int = 2,
+        tier: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute the agent's autonomous ReAct loop on the given task.
@@ -146,11 +147,13 @@ class BaseAgent:
                     response_text = self.llm.chat_sync(
                         message=current_input,
                         system_instruction=system_prompt,
+                        tier=tier,
                     )
                 else:
                     call_res = self.llm.chat(
                         message=current_input,
                         system_instruction=system_prompt,
+                        tier=tier,
                     )
                     if inspect.iscoroutine(call_res):
                         import asyncio

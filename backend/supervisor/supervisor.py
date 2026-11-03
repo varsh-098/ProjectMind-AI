@@ -149,6 +149,8 @@ class Supervisor:
         Uses fast deterministic classifier patterns, matching custom agent tags and keywords.
         """
         text = user_prompt.lower()
+        wants_local = any(k in text for k in ["local", "offline", "private", "air-gapped", "nemotron"])
+        target_tier = "local" if wants_local else None
 
         # 1. Check for Direct Memory questions
         is_memory = any(k in text for k in [
@@ -206,14 +208,16 @@ class Supervisor:
             return {
                 "intent": "PIPELINE",
                 "pipeline": pipeline,
-                "reasoning": f"Multi-step request requiring collaboration: {' -> '.join(pipeline)}",
+                "target_tier": target_tier,
+                "reasoning": f"Multi-step request requiring collaboration: {' -> '.join(pipeline)}" + (" (executed locally via Nemotron for zero cloud egress)" if wants_local else ""),
             }
         elif len(pipeline) == 1:
             intent_map = {"coding": "CODING", "review": "REVIEW", "testing": "TESTING"}
             return {
                 "intent": intent_map[pipeline[0]],
                 "pipeline": pipeline,
-                "reasoning": f"Specialized single-agent task routed to {pipeline[0]}.",
+                "target_tier": target_tier,
+                "reasoning": f"Specialized single-agent task routed to {pipeline[0]}." + (" (executed locally via Nemotron for zero cloud egress)" if wants_local else ""),
             }
 
         # Check any other custom agent registered by name
@@ -229,7 +233,8 @@ class Supervisor:
         return {
             "intent": "CODING",
             "pipeline": ["coding"],
-            "reasoning": "General development query routed to Coding Agent by default.",
+            "target_tier": target_tier,
+            "reasoning": "General development query routed to Coding Agent by default." + (" (executed locally via Nemotron for zero cloud egress)" if wants_local else ""),
         }
 
     def execute(
@@ -292,10 +297,11 @@ class Supervisor:
             if not agent:
                 continue
 
-            # Execute the agent
+            # Execute the agent with tier awareness (local Nemotron vs cloud Groq)
             res = agent.run(
                 user_prompt=context_accumulator,
                 rag_index=self.rag_index,
+                tier=routing_plan.get("target_tier"),
             )
             stage_results[stage_name] = res
 

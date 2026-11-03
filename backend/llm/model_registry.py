@@ -105,7 +105,7 @@ class ModelRegistry:
                 provider=getattr(settings, "tier_fast_provider", "groq"),
                 model_name=getattr(settings, "tier_fast_model", "llama-3.3-70b-versatile"),
                 description="Ultra low-latency for routing, classification, and quick lookups.",
-                fallback_chain=["groq", "gemini", "nemotron"],
+                fallback_chain=["groq", "nemotron", "gemini"],
                 temperature=0.3,
             ),
             ModelTier.BALANCED.value: ModelProfile(
