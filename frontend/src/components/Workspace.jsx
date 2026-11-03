@@ -233,15 +233,15 @@ export default function Workspace({ user, onBack }) {
     {
       id: 'welcome',
       role: 'assistant',
-      agent: 'Supervisor',
+      agent: 'ProjectMind AI',
       content: `Welcome to **ProjectMind AI** Interactive Workspace.
 
-I am the **Supervisor Orchestrator**. You can ask me high-level questions about the codebase, instruct me to build features, conduct security reviews, or run tests.
+I am your intelligent development assistant. You can ask me questions about the codebase, instruct me to build features, conduct security reviews, inspect memory facts, or run tests.
 
-### Capabilities:
-- **Autonomous Routing:** Dispatches tasks across Coding, Review, and Testing agents.
-- **Project Brain:** Inspect project files, memory facts, and Phase 25 benchmark scorecards via the top drawer controls.
-- **ReAct Trace:** Real-time visibility into tool execution and agent reasoning.
+### Functional Capabilities:
+- **Project Intelligence:** Natural conversational assistance grounded in your actual project code and memory.
+- **Repository Tools:** Access project files, architecture facts, and benchmark scorecards directly from the left sidebar.
+- **Automated Execution:** Instant code synthesis, test verification, and automated reviews.
 
 How can I assist your workflow today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -461,7 +461,7 @@ How can I assist your workflow today?`,
         assistantMsg = {
           id: 'asst_' + Date.now(),
           role: 'assistant',
-          agent: 'Supervisor',
+          agent: 'ProjectMind AI',
           routing_plan: data.routing_plan,
           stages_executed: data.stages_executed,
           content: contentText,
@@ -584,36 +584,68 @@ How can I assist your workflow today?`,
 
       {/* Main Workspace Layout */}
       <div className="workspace-layout">
-        {/* Left Agent Selector Sidebar */}
+        {/* Left Functional Tools Sidebar */}
         <aside className="workspace-sidebar">
           <div className="sidebar-section-title">
-            <span>ACTIVE AGENT</span>
-            <span className="sidebar-count">{allAgents.length} available</span>
+            <span>PROJECT TOOLS</span>
+            <span className="sidebar-count">3 available</span>
           </div>
 
           <div className="agent-selector-list">
-            {allAgents.map(ag => {
-              const IconComp = ag.icon || Bot
-              const isSelected = activeAgent === ag.id
-              return (
-                <button
-                  key={ag.id}
-                  className={`agent-selector-card ${isSelected ? 'selected' : ''}`}
-                  onClick={() => setActiveAgent(ag.id)}
-                >
-                  <div className="agent-card-icon" style={{ color: ag.color }}>
-                    <IconComp size={18} />
-                  </div>
-                  <div className="agent-card-text">
-                    <div className="agent-card-header">
-                      <span className="agent-card-name">{ag.name}</span>
-                      <span className="agent-card-badge">{ag.badge}</span>
-                    </div>
-                    <p className="agent-card-role">{ag.role}</p>
-                  </div>
-                </button>
-              )
-            })}
+            <button
+              className={`agent-selector-card ${activeDrawer === 'files' ? 'selected' : ''}`}
+              onClick={() => openDrawer(activeDrawer === 'files' ? null : 'files')}
+              title="Explore project code & files"
+            >
+              <div className="agent-card-icon" style={{ color: '#a78bfa' }}>
+                <FolderGit2 size={18} />
+              </div>
+              <div className="agent-card-text">
+                <div className="agent-card-header">
+                  <span className="agent-card-name">Files</span>
+                  <span className="agent-card-badge">
+                    {projectSummary ? `${projectSummary.total_files} files` : 'EXPLORER'}
+                  </span>
+                </div>
+                <p className="agent-card-role">Source code & directory explorer</p>
+              </div>
+            </button>
+
+            <button
+              className={`agent-selector-card ${activeDrawer === 'memory' ? 'selected' : ''}`}
+              onClick={() => openDrawer(activeDrawer === 'memory' ? null : 'memory')}
+              title="Inspect architecture decisions & persistent facts"
+            >
+              <div className="agent-card-icon" style={{ color: '#38bdf8' }}>
+                <Brain size={18} />
+              </div>
+              <div className="agent-card-text">
+                <div className="agent-card-header">
+                  <span className="agent-card-name">Memory</span>
+                  <span className="agent-card-badge">
+                    {memoryFacts.length ? `${memoryFacts.length} facts` : 'KNOWLEDGE'}
+                  </span>
+                </div>
+                <p className="agent-card-role">Persistent architecture facts & ADRs</p>
+              </div>
+            </button>
+
+            <button
+              className={`agent-selector-card ${activeDrawer === 'scorecard' ? 'selected' : ''}`}
+              onClick={() => openDrawer(activeDrawer === 'scorecard' ? null : 'scorecard')}
+              title="View benchmark evaluation scorecards"
+            >
+              <div className="agent-card-icon" style={{ color: '#f472b6' }}>
+                <Gauge size={18} />
+              </div>
+              <div className="agent-card-text">
+                <div className="agent-card-header">
+                  <span className="agent-card-name">Scorecard</span>
+                  <span className="agent-card-badge">BENCHMARKS</span>
+                </div>
+                <p className="agent-card-role">Evaluation metrics & benchmark suite</p>
+              </div>
+            </button>
           </div>
 
           <div className="sidebar-footer-box">
@@ -643,15 +675,17 @@ How can I assist your workflow today?`,
           {/* Active Mode Banner */}
           <div className="chat-canvas-header">
             <div className="active-agent-info">
-              <div className="active-agent-avatar" style={{ color: selectedAgentMeta.color }}>
-                {React.createElement(selectedAgentMeta.icon || Bot, { size: 20 })}
+              <div className="active-agent-avatar" style={{ color: '#a78bfa' }}>
+                <Orbit size={20} className="text-violet-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="active-agent-heading">{selectedAgentMeta.name}</h3>
-                  <span className="active-agent-tag">{selectedAgentMeta.badge}</span>
+                  <h3 className="active-agent-heading">ProjectMind Assistant</h3>
+                  <span className="active-agent-tag">INTELLIGENT WORKSPACE</span>
                 </div>
-                <p className="active-agent-sub">{selectedAgentMeta.desc}</p>
+                <p className="active-agent-sub">
+                  Context-aware assistant for codebase comprehension, feature implementation, and automated testing.
+                </p>
               </div>
             </div>
 
@@ -662,8 +696,8 @@ How can I assist your workflow today?`,
                   {
                     id: 'init_' + Date.now(),
                     role: 'assistant',
-                    agent: selectedAgentMeta.name,
-                    content: `Session cleared. Ready for your instructions as **${selectedAgentMeta.name}**.`,
+                    agent: 'ProjectMind AI',
+                    content: 'Session cleared. Ready for your instructions.',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                   },
                 ])
@@ -763,11 +797,7 @@ How can I assist your workflow today?`,
                 <div className="message-bubble assistant-bubble loading-bubble">
                   <div className="loading-state">
                     <Loader2 size={18} className="animate-spin text-violet-400" />
-                    <span>
-                      {activeAgent === 'supervisor'
-                        ? 'Supervisor orchestrating pipeline...'
-                        : `${selectedAgentMeta.name} reasoning and executing ReAct turns...`}
-                    </span>
+                    <span>ProjectMind analyzing context and executing task...</span>
                   </div>
                 </div>
               </div>
@@ -795,12 +825,12 @@ How can I assist your workflow today?`,
                     handleSend()
                   }
                 }}
-                placeholder={`Ask ${selectedAgentMeta.name} or type task instructions... (Enter to send, Shift+Enter for newline)`}
+                placeholder="Ask ProjectMind or type task instructions... (Enter to send, Shift+Enter for newline)"
               />
 
               <div className="prompt-actions">
                 <span className="prompt-agent-tag">
-                  Target: <strong>{selectedAgentMeta.name}</strong>
+                  Target: <strong>ProjectMind AI</strong>
                 </span>
 
                 <button
@@ -810,7 +840,7 @@ How can I assist your workflow today?`,
                   title="Execute Prompt"
                 >
                   {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  <span>{loading ? 'Executing' : 'Run'}</span>
+                  <span>{loading ? 'Processing' : 'Run'}</span>
                 </button>
               </div>
             </form>

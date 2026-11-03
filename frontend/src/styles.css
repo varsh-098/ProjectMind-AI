@@ -101,6 +101,90 @@ h1 span, .section-heading h2 span, .about-strip h2 span { background: linear-gra
 .notice-panel h2 { font-family: 'Space Grotesk', sans-serif; font-size: 27px; letter-spacing: -.04em; font-weight: 500; margin: 14px 0; }
 .notice-panel p { color: #a6a0bd; font-size: 13px; line-height: 1.8; margin-bottom: 23px; }
 .notice-action { width: 100%; }
+
+/* Capability Brief Modal */
+.cap-brief-modal {
+  width: min(540px, 100%);
+  padding: 30px 28px;
+  position: relative;
+  border: 1px solid rgba(186, 151, 255, .32);
+  border-radius: 20px;
+  background: linear-gradient(150deg, #17132a 0%, #0a0b16 75%);
+  box-shadow: 0 32px 100px rgba(0,0,0,.7), 0 0 60px rgba(139, 92, 246, 0.16);
+  animation: modal-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.cap-brief-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.cap-brief-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  padding: 3px 9px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+.cap-brief-modal h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f5f3ff;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.cap-brief-subtitle {
+  color: #a78bfa;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.cap-brief-body {
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.75;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 15px 16px;
+  border-radius: 12px;
+}
+.cap-highlights-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 9px;
+}
+.cap-highlights-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 22px;
+}
+.cap-highlight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #e2e8f0;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  padding: 4px 10px;
+  border-radius: 7px;
+}
 @keyframes rise-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes planet-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
 @keyframes halo-pulse { 0%,100% { transform: scale(.97); opacity: .55; } 50% { transform: scale(1.03); opacity: .95; } }

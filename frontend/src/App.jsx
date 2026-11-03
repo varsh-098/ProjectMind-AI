@@ -7,10 +7,62 @@ import Workspace from './components/Workspace.jsx'
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8081'
 
 const capabilities = [
-  { icon: MessageCircle, title: 'Chat with AI', text: 'Think through ideas, solve problems, and explore questions with your AI workspace.', tag: 'CONVERSATIONS' },
-  { icon: Bot, title: 'Specialized agents', text: 'Bring focused assistance to coding, reviewing, testing, and research workflows.', tag: 'AI AGENTS' },
-  { icon: BrainCircuit, title: 'Knowledge retrieval', text: 'Find useful context across your project knowledge and documents.', tag: 'YOUR KNOWLEDGE' },
-  { icon: FileText, title: 'File analysis', text: 'Explore documents and extract the details that matter to your work.', tag: 'DOCUMENTS' },
+  {
+    icon: MessageCircle,
+    title: 'Chat with AI',
+    text: 'Think through ideas, solve problems, and explore questions with your AI workspace.',
+    tag: 'CONVERSATIONS',
+    subtitle: 'Conversational reasoning and code assistance tailored to your repository context.',
+    brief: 'Engage in natural, repository-aware dialogues with ProjectMind AI. You can discuss architecture decisions, debug complex errors, analyze implementation trade-offs, and receive step-by-step programming guidance. Context carries across messages, and project memory facts are preserved across your session so you don\'t have to re-explain your stack.',
+    highlights: [
+      'Repository-grounded natural conversation',
+      'Multi-turn architectural reasoning',
+      'Direct bug diagnosis & code explanation',
+      'Persistent memory across session turns'
+    ]
+  },
+  {
+    icon: Bot,
+    title: 'Specialized agents',
+    text: 'Bring focused assistance to coding, reviewing, testing, and research workflows.',
+    tag: 'AI AGENTS',
+    subtitle: 'Autonomous multi-agent orchestration for specialized development tasks.',
+    brief: 'ProjectMind leverages specialized agent roles to divide and conquer software engineering tasks: a Coding Agent writes clean, production-ready code with sandbox protections; a Review Agent performs AST syntax validation and security compliance audits; and a Testing Agent builds and runs test suites to prevent regressions.',
+    highlights: [
+      'Autonomous multi-stage execution',
+      'Dedicated full-stack coding specialist',
+      'AST validation & security vulnerability scans',
+      'Automated test generation & execution'
+    ]
+  },
+  {
+    icon: BrainCircuit,
+    title: 'Knowledge retrieval',
+    text: 'Find useful context across your project knowledge and documents.',
+    tag: 'YOUR KNOWLEDGE',
+    subtitle: 'Vector embeddings and RAG pipeline for codebase search.',
+    brief: 'ProjectMind indexes your files, docstrings, architectural decisions, and documentation into vector embeddings. When you ask questions or assign tasks, the RAG (Retrieval-Augmented Generation) pipeline semantically retrieves the most relevant code chunks and injects them directly into the prompt context to ensure factual, hallucination-free answers.',
+    highlights: [
+      'High-speed semantic vector search',
+      'Configurable Top-K chunk injection',
+      'Project-specific code & doc embeddings',
+      'Accurate grounding in real repository files'
+    ]
+  },
+  {
+    icon: FileText,
+    title: 'File analysis',
+    text: 'Explore documents and extract the details that matter to your work.',
+    tag: 'DOCUMENTS',
+    subtitle: 'Deep source code inspection, line metrics, and syntax verification.',
+    brief: 'Inspect and understand the complete structure of your software project. ProjectMind provides detailed file trees, lines of code (LOC) metrics, instant file content previews, and syntax analysis. You can pull any file directly into your conversation prompt or inspect changes with surgical precision.',
+    highlights: [
+      'Live repository file explorer',
+      'Lines of code (LOC) & file metrics',
+      'Instant file content inspection & search',
+      'Direct file insertion into prompt context'
+    ]
+  },
 ]
 
 function Brand({ onHome, compact = false }) {
@@ -70,7 +122,7 @@ function Login({ go, onHome, onLoginSuccess }) {
   return <div className="auth-card-wrap"><div className="auth-mobile-brand"><Brand onHome={onHome}/></div><div className="auth-card"><div className="auth-card-kicker"><span className="auth-kicker-icon"><Sparkles size={15}/></span> YOUR WORKSPACE AWAITS</div><h2>Welcome back<span>.</span></h2><p className="auth-subtitle">Sign in to continue where your ideas left off.</p><form onSubmit={submit} className="auth-form"><label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={16}/><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label><PasswordField label="Password" value={password} onChange={e => setPassword(e.target.value)}/><div className="auth-options"><label className="remember-label"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}/><span className="custom-check"><Check size={11}/></span> Remember me</label><button type="button" className="text-action" onClick={() => go('forgot')}>Forgot password?</button></div><AuthMessage type={msgType}>{message}</AuthMessage><button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Signing in...' : <>Sign in <ArrowRight size={17}/></>}</button></form><div className="auth-divider"><span/> <small>OR CONTINUE WITH</small> <span/></div><button className="google-button" type="button" onClick={() => { setMsgType('error'); setMessage('Google sign-in will be enabled when OAuth is connected to the backend.') }}><span className="google-g">G</span> Continue with Google</button><p className="auth-switch">New to ProjectMind? <button onClick={() => go('signup')}>Create an account</button></p></div><p className="auth-legal">By continuing, you agree to our <button onClick={() => { setMsgType('error'); setMessage('Terms of Service will be published before launch.') }}>Terms of Service</button> and <button onClick={() => { setMsgType('error'); setMessage('Privacy Policy will be published before launch.') }}>Privacy Policy</button>.</p></div>
 }
 
-function Signup({ go, onHome }) {
+function Signup({ go, onHome, onSignupSuccess }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -113,6 +165,23 @@ function Signup({ go, onHome }) {
         setMsgType('error')
         setMessage(data.detail || 'Registration failed. Please check your credentials.')
       } else {
+        // Attempt immediate login so user directly enters their workspace
+        try {
+          const loginRes = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email: email.trim(), password }),
+          })
+          if (loginRes.ok) {
+            const loginData = await loginRes.json()
+            if (onSignupSuccess) onSignupSuccess(loginData.user)
+            setMsgType('success')
+            setMessage('Account created! Entering your workspace...')
+            setTimeout(() => go('workspace'), 800)
+            return
+          }
+        } catch (_) {}
         setMsgType('success')
         setMessage('Account created successfully in MongoDB! Redirecting to sign in...')
         setTimeout(() => go('login'), 1200)
@@ -138,6 +207,7 @@ export default function App() {
   const [page, setPage] = useState('home')
   const [showNotice, setShowNotice] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [selectedCapability, setSelectedCapability] = useState(null)
 
   useEffect(() => {
     // Check if user already has an active session cookie on load
@@ -156,7 +226,16 @@ export default function App() {
 
   const navigate = next => { setPage(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); window.history.replaceState(null, '', next === 'home' ? window.location.pathname : `#${next}`) }
   const enterProject = () => { document.getElementById('capabilities')?.scrollIntoView({ behavior: 'smooth' }) }
-  
+
+  // Requirement 1: If user is new (unauthenticated), redirect to signup; otherwise open workspace
+  const handleOpenWorkspace = () => {
+    if (currentUser) {
+      navigate('workspace')
+    } else {
+      navigate('signup')
+    }
+  }
+
   if (page === 'workspace') {
     return <Workspace user={currentUser} onBack={() => navigate('home')} />
   }
@@ -167,7 +246,7 @@ export default function App() {
         {page === 'login' ? (
           <Login go={navigate} onHome={() => navigate('home')} onLoginSuccess={user => setCurrentUser(user)} />
         ) : page === 'signup' ? (
-          <Signup go={navigate} onHome={() => navigate('home')} />
+          <Signup go={navigate} onHome={() => navigate('home')} onSignupSuccess={user => setCurrentUser(user)} />
         ) : (
           <Forgot go={navigate} onHome={() => navigate('home')} />
         )}
@@ -189,17 +268,49 @@ export default function App() {
     </div>
   ) : (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <button className="sign-in" onClick={() => navigate('workspace')} style={{ borderColor: 'rgba(196,164,255,0.3)' }}>
-        <Sparkles size={14} /> Demo Workspace
+      <button className="sign-in" onClick={handleOpenWorkspace} style={{ borderColor: 'rgba(196,164,255,0.3)' }}>
+        <Sparkles size={14} /> Workspace
       </button>
       <button className="sign-in" onClick={() => navigate('login')}>
         Sign in <ArrowUpRight size={15}/>
       </button>
     </div>
   )}</header>
-    <section className="hero" id="home"><div className="hero-copy"><div className="eyebrow"><span className="status-dot"/> YOUR INTELLIGENT WORKSPACE</div><h1>Think beyond<br/><span>boundaries.</span></h1><p className="hero-subtitle">A new orbit for your ideas. Bring coding, research, and discovery into one intelligent workspace.</p><div className="hero-actions"><button className="primary-button" onClick={() => navigate('workspace')}>Open Workspace <ArrowRight size={17}/></button><a className="secondary-button" href="#capabilities">Explore capabilities <ArrowDown size={15}/></a></div><div className="trust-line"><ShieldCheck size={15}/> Built for focused thinking and meaningful work</div></div><div className="planet-stage" aria-label="Interactive animated energy orb"><div className="planet-halo"/><EnergyPlanet/><div className="planet-caption"><span className="caption-pulse"/> PROJECTMIND GALAXY <span className="caption-line"/></div><div className="floating-label label-one"><Sparkles size={14}/> A universe of ideas</div><div className="floating-label label-two"><AudioLines size={14}/> Move to explore</div></div><div className="hero-bottom-note"><span>01</span> AN INTELLIGENT SPACE FOR WHAT'S NEXT</div><a className="scroll-cue" href="#capabilities" aria-label="Scroll to capabilities"><span/> Scroll to explore</a></section>
-    <section className="capabilities section-wrap" id="capabilities"><div className="section-heading"><div><div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div><h2>Everything you need to<br/><span>move ideas forward.</span></h2></div><p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p></div><div className="capability-grid">{capabilities.map(({ icon: Icon, title, text, tag }, i) => <article className="capability-card" key={title} style={{ '--card-index': i }}><div className="card-top"><span className="cap-icon"><Icon size={19}/></span><span className="card-index">0{i+1}</span></div><div className="card-tag">{tag}</div><h3>{title}</h3><p>{text}</p><button className="card-link" onClick={() => navigate('workspace')}>Launch in Workspace <ArrowUpRight size={15}/></button></article>)}</div></section>
+    <section className="hero" id="home"><div className="hero-copy"><div className="eyebrow"><span className="status-dot"/> YOUR INTELLIGENT WORKSPACE</div><h1>Think beyond<br/><span>boundaries.</span></h1><p className="hero-subtitle">A new orbit for your ideas. Bring coding, research, and discovery into one intelligent workspace.</p><div className="hero-actions"><button className="primary-button" onClick={handleOpenWorkspace}>Open Workspace <ArrowRight size={17}/></button><a className="secondary-button" href="#capabilities">Explore capabilities <ArrowDown size={15}/></a></div><div className="trust-line"><ShieldCheck size={15}/> Built for focused thinking and meaningful work</div></div><div className="planet-stage" aria-label="Interactive animated energy orb"><div className="planet-halo"/><EnergyPlanet/><div className="planet-caption"><span className="caption-pulse"/> PROJECTMIND GALAXY <span className="caption-line"/></div><div className="floating-label label-one"><Sparkles size={14}/> A universe of ideas</div><div className="floating-label label-two"><AudioLines size={14}/> Move to explore</div></div><div className="hero-bottom-note"><span>01</span> AN INTELLIGENT SPACE FOR WHAT'S NEXT</div><a className="scroll-cue" href="#capabilities" aria-label="Scroll to capabilities"><span/> Scroll to explore</a></section>
+    <section className="capabilities section-wrap" id="capabilities"><div className="section-heading"><div><div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div><h2>Everything you need to<br/><span>move ideas forward.</span></h2></div><p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p></div><div className="capability-grid">{capabilities.map((cap, i) => { const { icon: Icon, title, text, tag } = cap; return <article className="capability-card" key={title} style={{ '--card-index': i, cursor: 'pointer' }} onClick={() => setSelectedCapability(cap)}><div className="card-top"><span className="cap-icon"><Icon size={19}/></span><span className="card-index">0{i+1}</span></div><div className="card-tag">{tag}</div><h3>{title}</h3><p>{text}</p><button type="button" className="card-link" onClick={e => { e.stopPropagation(); setSelectedCapability(cap) }}>View capability brief <ArrowRight size={15}/></button></article> })}</div></section>
     <section className="about-strip section-wrap" id="about"><div className="about-orbit"><Orbit size={26}/></div><div><div className="eyebrow">MADE FOR CURIOSITY</div><h2>Your next idea starts <span>somewhere.</span></h2></div><a href="#home" className="back-top">Back to top <ArrowUpRight size={16}/></a></section><footer className="footer"><Brand onHome={() => navigate('home')} compact/><span>© 2026 ProjectMind AI · A workspace for curious minds.</span><button className="footer-help" onClick={() => setShowNotice(true)}><CircleHelp size={14}/> About this project</button></footer>
     {showNotice && <div className="notice-backdrop" onClick={() => setShowNotice(false)}><div className="notice-panel" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}><button className="notice-close" onClick={() => setShowNotice(false)}><X size={18}/></button><span className="notice-icon"><Sparkles size={22}/></span><div className="eyebrow">COMING IN THE NEXT PHASE</div><h2>The next orbit is taking shape.</h2><p>This capability will be part of your ProjectMind workspace. We're building the experience step by step.</p><button className="primary-button notice-action" onClick={() => setShowNotice(false)}>Sounds good <ArrowRight size={16}/></button></div></div>}
+    {selectedCapability && (
+      <div className="notice-backdrop" onClick={() => setSelectedCapability(null)}>
+        <div className="cap-brief-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <button className="notice-close" onClick={() => setSelectedCapability(null)} aria-label="Close">
+            <X size={18} />
+          </button>
+          <div className="cap-brief-header">
+            <div className="notice-icon" style={{ marginBottom: 0 }}>
+              {React.createElement(selectedCapability.icon, { size: 22 })}
+            </div>
+            <div>
+              <span className="cap-brief-tag">{selectedCapability.tag}</span>
+              <h2>{selectedCapability.title}</h2>
+            </div>
+          </div>
+          <p className="cap-brief-subtitle">{selectedCapability.subtitle}</p>
+          <div className="cap-brief-body">{selectedCapability.brief}</div>
+          <div className="cap-highlights-title">Key Capabilities</div>
+          <div className="cap-highlights-list">
+            {selectedCapability.highlights.map(h => (
+              <span key={h} className="cap-highlight-chip">
+                <Check size={12} className="text-violet-400" />
+                {h}
+              </span>
+            ))}
+          </div>
+          <button className="primary-button notice-action" type="button" onClick={() => setSelectedCapability(null)}>
+            Close Brief <Check size={16} />
+          </button>
+        </div>
+      </div>
+    )}
   </main>
 }
