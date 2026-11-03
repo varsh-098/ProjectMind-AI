@@ -199,14 +199,14 @@ class ProjectFileManager:
         """
         safe_file = self.get_safe_path(filepath)
 
+        if self.is_ignored(safe_file):
+            raise PermissionError(f"Access to file '{filepath}' is restricted.")
+
         if not safe_file.exists():
             raise FileNotFoundError(f"File not found: '{filepath}'")
 
         if not safe_file.is_file():
             raise ValueError(f"Path is not a regular file: '{filepath}'")
-
-        if self.is_ignored(safe_file):
-            raise PermissionError(f"Access to file '{filepath}' is restricted.")
 
         # Check file size limit
         file_size = safe_file.stat().st_size
@@ -359,4 +359,3 @@ class ProjectFileManager:
             "total_size_kb": round(total_bytes / 1024, 2),
             "extensions": sorted_exts,
         }
-
