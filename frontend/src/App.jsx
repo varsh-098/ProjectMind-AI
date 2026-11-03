@@ -4,7 +4,7 @@ import CosmicStarfield from './components/CosmicStarfield.jsx'
 import EnergyPlanet from './components/EnergyPlanet.jsx'
 import Workspace from './components/Workspace.jsx'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8081'
 
 const capabilities = [
   { icon: MessageCircle, title: 'Chat with AI', text: 'Think through ideas, solve problems, and explore questions with your AI workspace.', tag: 'CONVERSATIONS' },
