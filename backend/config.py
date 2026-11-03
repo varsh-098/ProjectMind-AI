@@ -71,7 +71,7 @@ try:
     class Settings(BaseSettings):
         """Application settings loaded from environment variables / .env file."""
         llm_provider: str = "nemotron"
-        nemotron_base_url: str = "http://localhost:8080"
+        nemotron_base_url: str = "http://127.0.0.1:8081"
         nemotron_model: str = "nemotron"
         groq_api_key: str | None = None
         groq_model: str = "llama-3.3-70b-versatile"

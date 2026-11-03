@@ -67,6 +67,39 @@ class TestingAgent(BaseAgent):
             max_turns=max_turns,
         )
 
+    def run(self, user_prompt: str, rag_index: Optional[ProjectRAGIndex] = None) -> Dict[str, Any]:
+        """
+        Execute testing tasks. If the LLM provider is offline or unconfigured,
+        falls back to directly invoking the test suite via the run_tests tool.
+        """
+        result = super().run(user_prompt=user_prompt, rag_index=rag_index)
+        if not result.get("success") and any(k in user_prompt.lower() for k in ["run test", "unit test", "test suite", "pass rate"]):
+            report = self.execute_and_report("tests")
+            summary_text = (
+                f"### 🧪 Testing Agent Execution Report\n\n"
+                f"- **Test Suite**: `{report['test_target']}`\n"
+                f"- **Outcome**: **{report['status']}** (Exit code: `{report['exit_code']}`)\n\n"
+                f"```text\n{report['output'].strip()}\n```\n\n"
+                "*(All tests were executed directly via the ProjectMind test runner)*"
+            )
+            return {
+                "agent": self.name,
+                "task": user_prompt,
+                "turns_executed": 1,
+                "steps": [
+                    {
+                        "turn": 1,
+                        "type": "tool_execution",
+                        "tool": "run_tests",
+                        "arguments": {"test_target": "tests"},
+                        "result": report,
+                    }
+                ],
+                "final_response": summary_text,
+                "success": True,
+            }
+        return result
+
     def execute_and_report(self, test_target: str = "tests") -> Dict[str, Any]:
         """
         Execute a test suite and return structured results.

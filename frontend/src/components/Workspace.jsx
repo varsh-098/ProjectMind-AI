@@ -89,8 +89,8 @@ const PRIMARY_AGENTS = [
 // Preset task starters for quick demonstration
 const QUICK_PROMPTS = [
   { label: 'Project Architecture', prompt: 'Summarize the architecture, tech stack, and key modules of ProjectMind AI.', agent: 'supervisor' },
-  { label: 'Run Unit Tests', prompt: 'Run the unit test suite and report pass rate and test status.', agent: 'testing' },
-  { label: 'Security Audit', prompt: 'Audit authentication security, session handling, and CORS configuration in backend.', agent: 'review' },
+  { label: 'Run Unit Tests', prompt: 'Run the unit test suite and report pass rate and test status.', agent: 'supervisor' },
+  { label: 'Security Audit', prompt: 'Audit authentication security, session handling, and CORS configuration in backend.', agent: 'supervisor' },
   { label: 'Inspect Memory', prompt: 'What persistent architectural facts and ADRs are stored in project memory?', agent: 'supervisor' },
 ]
 
@@ -683,8 +683,8 @@ How can I assist your workflow today?`,
                 key={idx}
                 className="quick-prompt-chip"
                 onClick={() => {
-                  setActiveAgent(qp.agent)
-                  handleSend(qp.prompt, qp.agent)
+                  setActiveAgent('supervisor')
+                  handleSend(qp.prompt, 'supervisor')
                 }}
               >
                 <span>{qp.label}</span>
