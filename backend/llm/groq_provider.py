@@ -105,14 +105,29 @@ class GroqProvider(BaseLLMProvider):
             "temperature": 0.7,
         }
 
+        import asyncio
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(
-                url=self.chat_url,
-                headers=headers,
-                json=request_body,
-            )
-            response.raise_for_status()
-            data = response.json()
+            for attempt in range(5):
+                response = await client.post(
+                    url=self.chat_url,
+                    headers=headers,
+                    json=request_body,
+                )
+                if response.status_code == 429 and attempt < 4:
+                    retry_after = response.headers.get('retry-after')
+                    wait_s = 2.0
+                    if retry_after:
+                        try:
+                            wait_s = max(float(retry_after) + 0.5, 1.0)
+                        except ValueError:
+                            wait_s = 2.0 * (attempt + 1)
+                    else:
+                        wait_s = 2.0 * (attempt + 1)
+                    await asyncio.sleep(wait_s)
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                break
 
         # Same response format as llama-server (OpenAI-compatible)
         choices = data.get("choices")
@@ -162,14 +177,29 @@ class GroqProvider(BaseLLMProvider):
             "temperature": 0.7,
         }
 
+        import time
         with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(
-                url=self.chat_url,
-                headers=headers,
-                json=request_body,
-            )
-            response.raise_for_status()
-            data = response.json()
+            for attempt in range(5):
+                response = client.post(
+                    url=self.chat_url,
+                    headers=headers,
+                    json=request_body,
+                )
+                if response.status_code == 429 and attempt < 4:
+                    retry_after = response.headers.get('retry-after')
+                    wait_s = 2.0
+                    if retry_after:
+                        try:
+                            wait_s = max(float(retry_after) + 0.5, 1.0)
+                        except ValueError:
+                            wait_s = 2.0 * (attempt + 1)
+                    else:
+                        wait_s = 2.0 * (attempt + 1)
+                    time.sleep(wait_s)
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                break
 
         choices = data.get("choices")
         if not choices:

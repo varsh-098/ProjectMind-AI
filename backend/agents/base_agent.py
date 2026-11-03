@@ -84,7 +84,7 @@ class BaseAgent:
         )
 
         if include_memory:
-            memory_block = tools.get_project_memory_context(max_chars=1800)
+            memory_block = tools.get_project_memory_context(max_chars=600)
             if memory_block:
                 prompt_parts.append(f"\n{memory_block}")
 
@@ -215,10 +215,14 @@ class BaseAgent:
                 "result": tool_result,
             })
 
-            # Format observation for the next turn
+            # Format observation for the next turn with token budgeting
+            raw_result = json.dumps(tool_result, indent=2)
+            if len(raw_result) > 1500:
+                raw_result = raw_result[:1500] + "\n... [truncated for token efficiency]"
+
             current_input = (
                 f"Tool '{tool_name}' executed.\n"
-                f"Result:\n{json.dumps(tool_result, indent=2)}\n\n"
+                f"Result:\n{raw_result}\n\n"
                 "Review the result above and proceed to the next step or provide your final response."
             )
 

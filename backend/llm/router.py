@@ -332,7 +332,7 @@ class ResilientLLMProvider(BaseLLMProvider):
             except Exception as e:
                 attempts.append({"provider": provider_name, "error": f"{type(e).__name__}: {e}"})
 
-        # Fallback to coroutine send(None) for mock unit tests
+        # Fallback to driving coroutine for synchronous mock tests
         try:
             coro = self.chat(
                 message,
@@ -343,8 +343,8 @@ class ResilientLLMProvider(BaseLLMProvider):
             coro.send(None)
         except StopIteration as e:
             return e.value
-        except Exception as e:
-            attempts.append({"provider": "router_coro", "error": str(e)})
+        except Exception:
+            pass
 
         error_details = "\n".join([f"  - {a['provider']}: {a['error']}" for a in attempts])
         raise RuntimeError(f"All LLM providers in fallback chain failed:\n{error_details}")
