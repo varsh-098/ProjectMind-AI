@@ -1,0 +1,40 @@
+# Git & CI/CD
+.git
+.github
+.gitignore
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Secrets & Environment Files
+.env
+.env.*
+!.env.production.example
+*.pem
+*.key
+*.crt
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project Scratch & Artifacts
+brain/
+scratch/
+tests/
+*.log
+

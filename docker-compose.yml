@@ -1,0 +1,66 @@
+# ============================================================
+# ProjectMind AI — Production Multi-Container Orchestration
+# ============================================================
+
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: projectmind-ai:latest
+    container_name: projectmind_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/projectmind
+      - MONGODB_DATABASE=projectmind
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      - COOKIE_SECURE=false
+      - COOKIE_SAMESITE=lax
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - NEMOTRON_API_KEY=${NEMOTRON_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - projectmind_net
+
+  mongodb:
+    image: mongo:7.0
+    container_name: projectmind_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=projectmind
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - projectmind_net
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  projectmind_net:
+    driver: bridge
+
