@@ -462,7 +462,7 @@ class MCPServer:
     def _get_project_structure(self) -> str:
         """Generate a text representation of the project structure."""
         lines = ["Project: ProjectMind AI", f"Root: {self.project_root}", ""]
-        target_dirs = ["backend", "projectmind/scripts"]
+        target_dirs = ["backend", "scripts", "frontend"]
 
         for target in target_dirs:
             full_path = os.path.join(self.project_root, target)
