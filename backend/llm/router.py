@@ -306,18 +306,48 @@ class ResilientLLMProvider(BaseLLMProvider):
     ) -> str:
         """
         Synchronous wrapper for BaseAgent / non-async call sites.
-        Safely bridges to the failover chain.
+        Safely bridges to the failover chain using concrete providers' chat_sync.
         """
-        coro = self.chat(
-            message,
-            system_instruction=system_instruction,
-            tier=tier,
-            task_type=task_type,
-        )
+        # Determine execution order based on tier or fallback chain
+        if tier:
+            try:
+                from backend.llm.model_registry import model_registry
+                provider_name = model_registry.get_tier_provider_name(tier)
+                order = [provider_name] + [p for p in self._fallback_chain if p != provider_name]
+            except Exception:
+                order = list(self._fallback_chain)
+        else:
+            order = [self._active_provider] + [p for p in self._fallback_chain if p != self._active_provider]
+
+        attempts = []
+        for provider_name in order:
+            provider = self.get_concrete_provider(provider_name)
+            if not provider:
+                attempts.append({"provider": provider_name, "error": "Unconfigured or missing credentials"})
+                continue
+
+            try:
+                if hasattr(provider, "chat_sync"):
+                    return provider.chat_sync(message, system_instruction=system_instruction)
+            except Exception as e:
+                attempts.append({"provider": provider_name, "error": f"{type(e).__name__}: {e}"})
+
+        # Fallback to coroutine send(None) for mock unit tests
         try:
+            coro = self.chat(
+                message,
+                system_instruction=system_instruction,
+                tier=tier,
+                task_type=task_type,
+            )
             coro.send(None)
         except StopIteration as e:
             return e.value
+        except Exception as e:
+            attempts.append({"provider": "router_coro", "error": str(e)})
+
+        error_details = "\n".join([f"  - {a['provider']}: {a['error']}" for a in attempts])
+        raise RuntimeError(f"All LLM providers in fallback chain failed:\n{error_details}")
 
 
 # Global default router singleton

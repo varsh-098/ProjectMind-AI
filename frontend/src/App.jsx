@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, AudioLines, Bot, BrainCircuit, ChevronLeft, CircleHelp, Eye, EyeOff, FileText, LockKeyhole, Mail, Menu, MessageCircle, Orbit, ShieldCheck, Sparkles, UserRound, X, Check, CheckCircle2, Loader2 } from 'lucide-react'
 import CosmicStarfield from './components/CosmicStarfield.jsx'
 import EnergyPlanet from './components/EnergyPlanet.jsx'
+import Workspace from './components/Workspace.jsx'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
@@ -56,7 +57,7 @@ function Login({ go, onHome, onLoginSuccess }) {
         if (onLoginSuccess) {
           onLoginSuccess(data.user)
         }
-        setTimeout(() => onHome(), 700)
+        setTimeout(() => go('workspace'), 700)
       }
     } catch (err) {
       setMsgType('error')
@@ -156,6 +157,10 @@ export default function App() {
   const navigate = next => { setPage(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); window.history.replaceState(null, '', next === 'home' ? window.location.pathname : `#${next}`) }
   const enterProject = () => { document.getElementById('capabilities')?.scrollIntoView({ behavior: 'smooth' }) }
   
+  if (page === 'workspace') {
+    return <Workspace user={currentUser} onBack={() => navigate('home')} />
+  }
+
   if (page !== 'home') {
     return (
       <AuthShell onHome={() => navigate('home')}>
@@ -170,8 +175,11 @@ export default function App() {
     )
   }
 
-  return <main className="site-shell"><CosmicStarfield/><header className="topbar"><Brand onHome={() => navigate('home')}/><button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">{menuOpen ? <X size={20}/> : <Menu size={20}/>}</button><nav className={menuOpen ? 'nav-links nav-open' : 'nav-links'} aria-label="Main navigation"><a href="#home" onClick={() => setMenuOpen(false)}>Home</a><a href="#capabilities" onClick={() => setMenuOpen(false)}>Capabilities</a><a href="#about" onClick={() => setMenuOpen(false)}>About</a></nav>{currentUser ? (
+  return <main className="site-shell"><CosmicStarfield/><header className="topbar"><Brand onHome={() => navigate('home')}/><button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">{menuOpen ? <X size={20}/> : <Menu size={20}/>}</button><nav className={menuOpen ? 'nav-links nav-open' : 'nav-links'} aria-label="Main navigation"><a href="#home" onClick={() => setMenuOpen(false)}>Home</a><a href="#capabilities" onClick={() => setMenuOpen(false)}>Capabilities</a><a href="#about" onClick={() => setMenuOpen(false)}>About</a>{currentUser && <button onClick={() => navigate('workspace')} style={{ background: 'transparent', border: 0, color: '#c4a4ff', cursor: 'pointer', padding: 0, fontWeight: 600 }}>Workspace</button>}</nav>{currentUser ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <button className="sign-in" onClick={() => navigate('workspace')} style={{ borderColor: 'rgba(196,164,255,0.4)', background: 'rgba(196,164,255,0.1)' }}>
+        <Sparkles size={14} className="text-violet-400" /> Workspace
+      </button>
       <span className="sign-in" style={{ cursor: 'default', color: '#c4a4ff' }}>
         <UserRound size={14} /> {currentUser.username}
       </span>
@@ -180,12 +188,17 @@ export default function App() {
       </button>
     </div>
   ) : (
-    <button className="sign-in" onClick={() => navigate('login')}>
-      Sign in <ArrowUpRight size={15}/>
-    </button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <button className="sign-in" onClick={() => navigate('workspace')} style={{ borderColor: 'rgba(196,164,255,0.3)' }}>
+        <Sparkles size={14} /> Demo Workspace
+      </button>
+      <button className="sign-in" onClick={() => navigate('login')}>
+        Sign in <ArrowUpRight size={15}/>
+      </button>
+    </div>
   )}</header>
-    <section className="hero" id="home"><div className="hero-copy"><div className="eyebrow"><span className="status-dot"/> YOUR INTELLIGENT WORKSPACE</div><h1>Think beyond<br/><span>boundaries.</span></h1><p className="hero-subtitle">A new orbit for your ideas. Bring coding, research, and discovery into one intelligent workspace.</p><div className="hero-actions"><button className="primary-button" onClick={() => navigate(currentUser ? 'home' : 'signup')}>{currentUser ? 'Open Workspace' : 'Get started'} <ArrowRight size={17}/></button><a className="secondary-button" href="#capabilities">Explore capabilities <ArrowDown size={15}/></a></div><div className="trust-line"><ShieldCheck size={15}/> Built for focused thinking and meaningful work</div></div><div className="planet-stage" aria-label="Interactive animated energy orb"><div className="planet-halo"/><EnergyPlanet/><div className="planet-caption"><span className="caption-pulse"/> PROJECTMIND GALAXY <span className="caption-line"/></div><div className="floating-label label-one"><Sparkles size={14}/> A universe of ideas</div><div className="floating-label label-two"><AudioLines size={14}/> Move to explore</div></div><div className="hero-bottom-note"><span>01</span> AN INTELLIGENT SPACE FOR WHAT'S NEXT</div><a className="scroll-cue" href="#capabilities" aria-label="Scroll to capabilities"><span/> Scroll to explore</a></section>
-    <section className="capabilities section-wrap" id="capabilities"><div className="section-heading"><div><div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div><h2>Everything you need to<br/><span>move ideas forward.</span></h2></div><p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p></div><div className="capability-grid">{capabilities.map(({ icon: Icon, title, text, tag }, i) => <article className="capability-card" key={title} style={{ '--card-index': i }}><div className="card-top"><span className="cap-icon"><Icon size={19}/></span><span className="card-index">0{i+1}</span></div><div className="card-tag">{tag}</div><h3>{title}</h3><p>{text}</p><button className="card-link" onClick={() => setShowNotice(true)}>Explore <ArrowUpRight size={15}/></button></article>)}</div></section>
+    <section className="hero" id="home"><div className="hero-copy"><div className="eyebrow"><span className="status-dot"/> YOUR INTELLIGENT WORKSPACE</div><h1>Think beyond<br/><span>boundaries.</span></h1><p className="hero-subtitle">A new orbit for your ideas. Bring coding, research, and discovery into one intelligent workspace.</p><div className="hero-actions"><button className="primary-button" onClick={() => navigate('workspace')}>Open Workspace <ArrowRight size={17}/></button><a className="secondary-button" href="#capabilities">Explore capabilities <ArrowDown size={15}/></a></div><div className="trust-line"><ShieldCheck size={15}/> Built for focused thinking and meaningful work</div></div><div className="planet-stage" aria-label="Interactive animated energy orb"><div className="planet-halo"/><EnergyPlanet/><div className="planet-caption"><span className="caption-pulse"/> PROJECTMIND GALAXY <span className="caption-line"/></div><div className="floating-label label-one"><Sparkles size={14}/> A universe of ideas</div><div className="floating-label label-two"><AudioLines size={14}/> Move to explore</div></div><div className="hero-bottom-note"><span>01</span> AN INTELLIGENT SPACE FOR WHAT'S NEXT</div><a className="scroll-cue" href="#capabilities" aria-label="Scroll to capabilities"><span/> Scroll to explore</a></section>
+    <section className="capabilities section-wrap" id="capabilities"><div className="section-heading"><div><div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div><h2>Everything you need to<br/><span>move ideas forward.</span></h2></div><p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p></div><div className="capability-grid">{capabilities.map(({ icon: Icon, title, text, tag }, i) => <article className="capability-card" key={title} style={{ '--card-index': i }}><div className="card-top"><span className="cap-icon"><Icon size={19}/></span><span className="card-index">0{i+1}</span></div><div className="card-tag">{tag}</div><h3>{title}</h3><p>{text}</p><button className="card-link" onClick={() => navigate('workspace')}>Launch in Workspace <ArrowUpRight size={15}/></button></article>)}</div></section>
     <section className="about-strip section-wrap" id="about"><div className="about-orbit"><Orbit size={26}/></div><div><div className="eyebrow">MADE FOR CURIOSITY</div><h2>Your next idea starts <span>somewhere.</span></h2></div><a href="#home" className="back-top">Back to top <ArrowUpRight size={16}/></a></section><footer className="footer"><Brand onHome={() => navigate('home')} compact/><span>© 2026 ProjectMind AI · A workspace for curious minds.</span><button className="footer-help" onClick={() => setShowNotice(true)}><CircleHelp size={14}/> About this project</button></footer>
     {showNotice && <div className="notice-backdrop" onClick={() => setShowNotice(false)}><div className="notice-panel" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}><button className="notice-close" onClick={() => setShowNotice(false)}><X size={18}/></button><span className="notice-icon"><Sparkles size={22}/></span><div className="eyebrow">COMING IN THE NEXT PHASE</div><h2>The next orbit is taking shape.</h2><p>This capability will be part of your ProjectMind workspace. We're building the experience step by step.</p><button className="primary-button notice-action" onClick={() => setShowNotice(false)}>Sounds good <ArrowRight size={16}/></button></div></div>}
   </main>

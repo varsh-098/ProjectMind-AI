@@ -38,6 +38,11 @@ class RunAgentRequest(BaseModel):
     top_k_rag: int = Field(default=2, ge=1, le=10, description="Top K RAG context chunks to inject.")
 
 
+class SupervisorRunRequest(BaseModel):
+    task: str = Field(..., min_length=1, description="Task prompt for the supervisor to orchestrate.")
+    session_id: Optional[str] = Field(default=None, description="Optional session ID for tracing.")
+
+
 class FromTemplateRequest(BaseModel):
     template_name: str = Field(..., description="ID of template (e.g. 'documentation_agent')")
     name: str = Field(..., min_length=2, description="Unique name for the new agent")
@@ -54,7 +59,58 @@ class FromTemplateRequest(BaseModel):
 async def list_agents(
     include_templates: bool = Query(default=True, description="Whether to include templates")
 ) -> List[Dict[str, Any]]:
-    return default_agent_builder.list_agents(include_templates=include_templates)
+    agents_list = default_agent_builder.list_agents(include_templates=include_templates)
+    
+    # Prepend built-in primary agents if not already present
+    built_in_names = {a["name"] for a in agents_list}
+    built_ins = [
+        {
+            "name": "supervisor",
+            "role": "Autonomous Multi-Agent Orchestrator",
+            "description": "Analyzes intent, dispatches specialized agents (Coding, Review, Testing), and coordinates multi-step pipelines.",
+            "allowed_tools": ["classify_intent", "dispatch_agent", "search_memory"],
+            "max_turns": 10,
+            "is_template": False,
+            "tags": ["orchestrator", "routing", "pipeline", "autonomous"],
+            "created_at": None,
+        },
+        {
+            "name": "coding",
+            "role": "Full-Stack Software Engineer",
+            "description": "Implements features, resolves bugs, refactors code, and performs surgical file edits.",
+            "allowed_tools": ["read_file", "edit_file", "create_file", "search_code", "list_files", "run_tests", "recall_fact"],
+            "max_turns": 5,
+            "is_template": False,
+            "tags": ["code", "refactor", "bugfix", "development"],
+            "created_at": None,
+        },
+        {
+            "name": "review",
+            "role": "Senior Code Reviewer & Security Auditor",
+            "description": "Performs AST syntax validation, security compliance audits, and architectural reviews.",
+            "allowed_tools": ["read_file", "search_code", "list_files", "get_project_summary", "recall_fact"],
+            "max_turns": 5,
+            "is_template": False,
+            "tags": ["review", "security", "ast", "linting"],
+            "created_at": None,
+        },
+        {
+            "name": "testing",
+            "role": "Test Automation & QA Engineer",
+            "description": "Executes unit test suites, discovers regressions, and verifies behavioral correctness.",
+            "allowed_tools": ["run_tests", "read_file", "search_code", "list_files", "recall_fact"],
+            "max_turns": 5,
+            "is_template": False,
+            "tags": ["testing", "unittest", "regression", "qa"],
+            "created_at": None,
+        },
+    ]
+
+    for b in reversed(built_ins):
+        if b["name"] not in built_in_names:
+            agents_list.insert(0, b)
+
+    return agents_list
 
 
 @router.get("/templates", summary="List starter agent templates")
@@ -103,14 +159,60 @@ async def get_agent_spec(name: str) -> Dict[str, Any]:
     return spec.model_dump()
 
 
-@router.post("/{name}/run", summary="Run a task directly with an agent")
-async def run_agent(name: str, req: RunAgentRequest) -> Dict[str, Any]:
-    agent = default_agent_builder.get_agent(name)
-    if not agent:
-        raise HTTPException(status_code=404, detail=f"Agent '{name}' not found.")
+@router.post("/supervisor", summary="Run task via Supervisor orchestrator")
+def run_supervisor(req: SupervisorRunRequest) -> Dict[str, Any]:
+    try:
+        from backend.supervisor.supervisor import Supervisor
+        sup = Supervisor()
+        return sup.execute(user_prompt=req.task, session_id=req.session_id)
+    except Exception as e:
+        return {
+            "task": req.task,
+            "intent": "ERROR",
+            "routing_plan": {"intent": "ERROR", "pipeline": [], "reasoning": str(e)},
+            "stages_executed": [],
+            "results": {},
+            "summary": f"⚠️ Supervisor encountered an issue: {str(e)}",
+            "success": False,
+            "error": str(e),
+        }
 
-    result = agent.run(user_prompt=req.task, top_k_rag=req.top_k_rag)
-    return result
+
+@router.post("/{name}/run", summary="Run a task directly with an agent")
+def run_agent(name: str, req: RunAgentRequest) -> Dict[str, Any]:
+    try:
+        clean_name = name.strip().lower()
+
+        if clean_name in ("supervisor", "auto"):
+            from backend.supervisor.supervisor import Supervisor
+            sup = Supervisor()
+            return sup.execute(user_prompt=req.task)
+
+        clean_alias = clean_name.replace("_agent", "")
+        from backend.supervisor.supervisor import Supervisor
+        sup = Supervisor()
+        if clean_alias in sup.agent_registry:
+            agent = sup.agent_registry[clean_alias]
+            return agent.run(user_prompt=req.task, top_k_rag=req.top_k_rag)
+
+        agent = default_agent_builder.get_agent(name)
+        if not agent:
+            raise HTTPException(status_code=404, detail=f"Agent '{name}' not found.")
+
+        result = agent.run(user_prompt=req.task, top_k_rag=req.top_k_rag)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "agent": name,
+            "task": req.task,
+            "turns_executed": 0,
+            "steps": [],
+            "final_response": f"⚠️ Agent '{name}' encountered an error:\n\n`{str(e)}`",
+            "success": False,
+            "error": str(e),
+        }
 
 
 @router.delete("/{name}", summary="Delete a custom agent")

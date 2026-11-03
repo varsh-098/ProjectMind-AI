@@ -146,7 +146,9 @@ async def get_latest_scorecard_markdown():
         )
     md = report.to_markdown()
     try:
-        return PlainTextResponse(content=md, media_type="text/markdown")
+        resp = PlainTextResponse(content=md, media_type="text/markdown")
+        resp.content = md
+        return resp
     except Exception:
         return md
 

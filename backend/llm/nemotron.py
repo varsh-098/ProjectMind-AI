@@ -61,7 +61,7 @@ THE RESPONSE FORMAT:
 """
 
 import httpx
-from typing import Optional
+from typing import Optional, Any
 from backend.llm.base import BaseLLMProvider
 from backend.config import settings
 
@@ -159,6 +159,56 @@ class NemotronProvider(BaseLLMProvider):
         # so we get a clear error message instead of a cryptic
         # KeyError if the format is unexpected.
         # -------------------------------------------------------
+        choices = data.get("choices")
+        if not choices:
+            raise ValueError(
+                f"Nemotron response has no 'choices'. Raw response: {data}"
+            )
+
+        content = choices[0].get("message", {}).get("content")
+        if content is None:
+            raise ValueError(
+                f"Nemotron response has no 'content'. Raw response: {data}"
+            )
+
+        return content
+
+    def chat_sync(
+        self,
+        message: str,
+        system_instruction: str | None = None,
+    ) -> str:
+        """Synchronously send a message to Nemotron via llama-server."""
+        sys_prompt = system_instruction or (
+            "You are ProjectMind AI, an intelligent coding and research assistant. "
+            "You help developers understand codebases, write clean code, and debug issues. "
+            "You are direct, concise, and technically precise. Prefer clear code examples "
+            "and accurate responses."
+        )
+
+        request_body = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": sys_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": message,
+                },
+            ],
+            "temperature": 0.7,
+        }
+
+        with httpx.Client(timeout=self.timeout) as client:
+            response = client.post(
+                url=self.chat_url,
+                json=request_body,
+            )
+            response.raise_for_status()
+            data = response.json()
+
         choices = data.get("choices")
         if not choices:
             raise ValueError(

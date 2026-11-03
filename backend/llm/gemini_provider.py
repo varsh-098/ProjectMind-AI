@@ -176,6 +176,62 @@ class GeminiProvider(BaseLLMProvider):
 
         return content
 
+    def chat_sync(
+        self,
+        message: str,
+        system_instruction: str | None = None,
+    ) -> str:
+        """Synchronously send a message to Gemini using httpx.Client."""
+        sys_prompt = system_instruction or (
+            "You are ProjectMind AI, an intelligent coding and research assistant. "
+            "You help developers understand codebases, write clean code, and debug issues. "
+            "You are direct, concise, and technically precise. Prefer clear code examples "
+            "and accurate responses."
+        )
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        request_body = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": sys_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": message,
+                },
+            ],
+            "temperature": 0.7,
+        }
+
+        with httpx.Client(timeout=self.timeout) as client:
+            response = client.post(
+                url=self.chat_url,
+                headers=headers,
+                json=request_body,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        choices = data.get("choices")
+        if not choices:
+            raise ValueError(
+                f"Gemini response has no 'choices'. Raw response: {data}"
+            )
+
+        content = choices[0].get("message", {}).get("content")
+        if content is None:
+            raise ValueError(
+                f"Gemini response has no 'content'. Raw response: {data}"
+            )
+
+        return content
+
     async def health_check(self) -> dict:
         """Probe Gemini API to verify key and Google AI Studio availability."""
         import time

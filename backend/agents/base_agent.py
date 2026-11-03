@@ -141,21 +141,37 @@ class BaseAgent:
 
             # Call LLM (supports both async and sync providers)
             import inspect
-            if hasattr(self.llm, 'chat_sync'):
-                response_text = self.llm.chat_sync(
-                    message=current_input,
-                    system_instruction=system_prompt,
-                )
-            else:
-                call_res = self.llm.chat(
-                    message=current_input,
-                    system_instruction=system_prompt,
-                )
-                if inspect.iscoroutine(call_res):
-                    import asyncio
-                    response_text = asyncio.run(call_res)
+            try:
+                if hasattr(self.llm, 'chat_sync'):
+                    response_text = self.llm.chat_sync(
+                        message=current_input,
+                        system_instruction=system_prompt,
+                    )
                 else:
-                    response_text = call_res
+                    call_res = self.llm.chat(
+                        message=current_input,
+                        system_instruction=system_prompt,
+                    )
+                    if inspect.iscoroutine(call_res):
+                        import asyncio
+                        response_text = asyncio.run(call_res)
+                    else:
+                        response_text = call_res
+            except Exception as e:
+                return {
+                    "agent": self.name,
+                    "task": user_prompt,
+                    "turns_executed": turn,
+                    "steps": steps,
+                    "final_response": (
+                        f"⚠️ **Agent Execution Notice:** The AI model could not be reached:\n\n"
+                        f"```\n{str(e)}\n```\n\n"
+                        "Please verify your LLM configuration in `.env` (Groq/Gemini API key and model) "
+                        "and ensure internet connectivity."
+                    ),
+                    "success": False,
+                    "error": str(e),
+                }
 
             # Check if LLM requested a tool call
             tool_call = tools.parse_tool_call(response_text)
