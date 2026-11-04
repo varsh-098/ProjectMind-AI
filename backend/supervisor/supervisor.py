@@ -155,7 +155,9 @@ class Supervisor:
         # 1. Check for Direct Memory questions
         is_memory = any(k in text for k in [
             "what database", "what db", "which framework", "conventions", "tech stack",
-            "what llm", "what models", "remembered", "decision", "adr"
+            "what llm", "what models", "remembered", "decision", "adr",
+            "architecture", "core modules", "project summary", "stored in project memory", "memory facts",
+            "course enrollment portal architecture", "course enrollment portal roadmap", "portal roadmap"
         ])
         wants_review = any(k in text for k in ["review", "audit", "security check", "vulnerability"])
         wants_testing = any(k in text for k in ["run test", "run tests", "pytest", "unit test", "test suite"])
@@ -253,8 +255,16 @@ class Supervisor:
 
         # Strategy 1: Direct Memory Route (Zero LLM / Token Overhead)
         if intent == "MEMORY":
-            memory_results = tools.search_project_memory(user_prompt, top_k=3)
-            summary = f"Retrieved {len(memory_results)} memory facts and decisions directly without invoking agent loops."
+            memory_results = tools.search_project_memory(user_prompt, top_k=5)
+            formatted_matches = []
+            for m in memory_results:
+                formatted_matches.append({
+                    "key": m.get("key") or m.get("title") or "Fact",
+                    "value": m.get("content") or m.get("value") or str(m),
+                    "category": m.get("category", "architecture"),
+                    "score": m.get("score", 1.0),
+                })
+            summary = f"Retrieved {len(formatted_matches)} memory facts and decisions directly without invoking agent loops."
             payload = {
                 "task": user_prompt,
                 "intent": intent,
@@ -263,7 +273,7 @@ class Supervisor:
                 "results": {
                     "memory": {
                         "type": "direct_memory_lookup",
-                        "matches": memory_results,
+                        "matches": formatted_matches,
                     }
                 },
                 "summary": summary,

@@ -444,7 +444,8 @@ How can I assist your workflow today?`,
           if (data.results.memory && data.results.memory.matches) {
             contentText += `\n\n**Retrieved Memory Facts (${data.results.memory.matches.length}):**\n`
             data.results.memory.matches.forEach((m, i) => {
-              contentText += `- **${m.key || 'Fact ' + (i + 1)}**: ${m.value || JSON.stringify(m)}\n`
+              const val = m.value || m.content || JSON.stringify(m)
+              contentText += `- **${m.key || 'Fact ' + (i + 1)}**: ${val}\n`
             })
           }
           if (data.results.coding && data.results.coding.final_response) {

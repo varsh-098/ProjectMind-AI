@@ -276,15 +276,20 @@ class ProjectMemoryManager:
 
         lines = ["--- PROJECT MEMORY (Architecture, Tech Stack & Facts) ---"]
 
-        # Group facts by category
+        # Group facts by category with prioritized category ordering
         by_category: Dict[str, List[str]] = {}
         for f in facts:
             cat = f.get("category", "general").upper()
             by_category.setdefault(cat, []).append(f"• {f['key']}: {f['value']}")
 
-        for cat, items in by_category.items():
+        category_order = ["TECH_STACK", "ARCHITECTURE", "CONVENTIONS", "GENERAL"]
+        ordered_cats = [c for c in category_order if c in by_category] + [
+            c for c in by_category if c not in category_order
+        ]
+
+        for cat in ordered_cats:
             lines.append(f"\n[{cat}]")
-            lines.extend(items)
+            lines.extend(by_category[cat])
 
         # Include recent decisions if space allows
         if self.decisions and (category is None or category == "decisions"):
@@ -359,13 +364,82 @@ class ProjectMemoryManager:
             ),
         ]
 
-        for key, val, cat, tags in defaults:
+        portal_defaults = [
+            (
+                "target_project",
+                "Online Course Enrollment Portal — A web-based academic platform supporting student registration, searchable course listings, automated enrollment management, timetable conflict detection, and an administrative dashboard.",
+                "architecture",
+                ["course_portal", "overview", "problem_statement_7"],
+            ),
+            (
+                "student_registration",
+                "Student registration module: Manages secure student onboarding, student ID generation, major/degree program selection, contact details, and completed prerequisite tracking.",
+                "architecture",
+                ["student", "registration", "auth", "profile"],
+            ),
+            (
+                "course_listings",
+                "Course catalog & listings module: Displays course codes (e.g. CS101, MATH201, BIO105), titles, descriptions, assigned instructors, credit values (1-4 credits), capacity limits, and weekly meeting time slots (days and start/end times).",
+                "architecture",
+                ["courses", "catalog", "timetable", "schedule"],
+            ),
+            (
+                "enrollment_management",
+                "Enrollment management module: Handles course add/drop operations, validates prerequisite completion, enforces maximum 18-credit per semester limits, and automatically invokes the conflict detection engine before confirming registration.",
+                "architecture",
+                ["enrollment", "add_drop", "validation", "credits"],
+            ),
+            (
+                "admin_dashboard",
+                "Admin dashboard module: Comprehensive administrative portal for department chairs and registrars to create/update courses, assign faculty instructors, monitor room capacities, review enrollment stats, and override waitlists.",
+                "architecture",
+                ["admin", "dashboard", "analytics", "management"],
+            ),
+            (
+                "conflict_detection_engine",
+                "AI Scheduling Conflict Detector: Analyzes student timetable slots for overlapping days and time intervals (e.g. Course A on Mon/Wed 10:00-11:30 vs Course B on Mon/Wed 10:30-12:00), detects exam date clashes, and flags instructor double-booking.",
+                "architecture",
+                ["ai", "scheduling", "conflict_detection", "timetable"],
+            ),
+            (
+                "development_roadmap",
+                "Development Roadmap: Phase 1: Database Schema & Student Registration; Phase 2: Course Listings & Catalog Search; Phase 3: Enrollment Engine & Scheduling Conflict Detection; Phase 4: Admin Dashboard, Analytics & Deployment.",
+                "architecture",
+                ["roadmap", "milestones", "project_planning"],
+            ),
+            (
+                "scheduling_rules",
+                "Core scheduling policies: 1) Overlap Constraint: Courses with overlapping time intervals on the same weekday are disallowed. 2) Credit Limit: Maximum 18 credits per semester. 3) Capacity Limit: Enrollment cannot exceed maximum room capacity.",
+                "conventions",
+                ["rules", "scheduling", "constraints", "credits"],
+            ),
+        ]
+
+        for key, val, cat, tags in defaults + portal_defaults:
             self.add_fact(key=key, value=val, category=cat, tags=tags)
 
-        # Seed initial decision
+        # Seed initial decisions
         self.record_decision(
             title="Adopt Strategy & Factory Patterns for Multi-LLM Support",
             description="All LLM integrations implement BaseLLMProvider so chat endpoints remain provider-agnostic.",
             rationale="Allows switching between local offline models (Nemotron) and cloud APIs (Groq, Gemini) with zero code changes.",
             tags=["llm", "design-pattern", "architecture"],
+        )
+        self.record_decision(
+            title="Adopt Interval Collision Algorithm for Timetable Conflict Detection",
+            description="Implemented deterministic interval overlap detection comparing start and end minutes on matching weekdays to prevent scheduling conflicts during course enrollment.",
+            rationale="Prevents double-booking students and guarantees instantaneous conflict feedback before database commit.",
+            tags=["scheduling", "conflict-detection", "algorithm", "course-portal"],
+        )
+        self.record_decision(
+            title="Role-Based Access Control (RBAC) for Student vs Admin Portals",
+            description="Partitioned the course portal into Student Views (catalog browsing, enrollment) and Admin Views (course authoring, capacity overrides, reports).",
+            rationale="Ensures academic security and prevents unauthorized modification of course limits or grades.",
+            tags=["security", "rbac", "student", "admin"],
+        )
+        self.record_decision(
+            title="Four-Phase Agile Development Roadmap for Course Portal",
+            description="Adopted a 4-phase milestone roadmap covering Auth/Schema (Sprint 1), Catalog Search (Sprint 2), Conflict Detection Engine (Sprint 3), and Admin Dashboard (Sprint 4).",
+            rationale="Enables modular verification of the conflict detector before assembling the complete web interface.",
+            tags=["roadmap", "agile", "project-planning"],
         )

@@ -218,15 +218,16 @@ class BaseAgent:
                 "result": tool_result,
             })
 
-            # Format observation for the next turn with token budgeting
+            # Format observation for the next turn with task preservation and token budgeting
             raw_result = json.dumps(tool_result, indent=2)
             if len(raw_result) > 1500:
                 raw_result = raw_result[:1500] + "\n... [truncated for token efficiency]"
 
             current_input = (
-                f"Tool '{tool_name}' executed.\n"
+                f"Original Task: {user_prompt}\n\n"
+                f"Tool '{tool_name}' executed with arguments {json.dumps(tool_args)}.\n"
                 f"Result:\n{raw_result}\n\n"
-                "Review the result above and proceed to the next step or provide your final response."
+                f"Now continue fulfilling the user task: \"{user_prompt}\". Either call another tool or provide your final response."
             )
 
         # Max turns reached
