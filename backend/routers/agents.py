@@ -41,6 +41,7 @@ class RunAgentRequest(BaseModel):
 class SupervisorRunRequest(BaseModel):
     task: str = Field(..., min_length=1, description="Task prompt for the supervisor to orchestrate.")
     session_id: Optional[str] = Field(default=None, description="Optional session ID for tracing.")
+    history: Optional[List[Dict[str, Any]]] = Field(default=None, description="Recent conversation turns.")
 
 
 class FromTemplateRequest(BaseModel):
@@ -164,7 +165,7 @@ def run_supervisor(req: SupervisorRunRequest) -> Dict[str, Any]:
     try:
         from backend.supervisor.supervisor import Supervisor
         sup = Supervisor()
-        return sup.execute(user_prompt=req.task, session_id=req.session_id)
+        return sup.execute(user_prompt=req.task, session_id=req.session_id, history=req.history)
     except Exception as e:
         return {
             "task": req.task,

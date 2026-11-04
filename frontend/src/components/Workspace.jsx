@@ -430,10 +430,15 @@ How can I assist your workflow today?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
       } else if (agentToUse === 'supervisor') {
+        const recentHistory = messages.slice(-6).map(m => ({
+          role: m.role,
+          content: m.content,
+          agent: m.agent,
+        }))
         const res = await fetch(`${API_BASE}/agents/supervisor`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task: promptToSend }),
+          body: JSON.stringify({ task: promptToSend, history: recentHistory }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}: ${res.statusText}`)
@@ -471,11 +476,20 @@ How can I assist your workflow today?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
       } else {
-        // Individual specialized agent run
+        // Individual specialized agent run with conversational context
+        let contextualTask = promptToSend
+        const lowerPrompt = promptToSend.toLowerCase().trim()
+        const isReferential = ['it', 'this', 'that', 'the code', 'the above'].some(w => lowerPrompt.includes(w)) || lowerPrompt.split(' ').length <= 3
+        if (isReferential && messages.length > 0) {
+          const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
+          if (lastAssistant && lastAssistant.content) {
+            contextualTask = `${promptToSend}\n\nContext from previous turn:\n${lastAssistant.content.slice(0, 2000)}`
+          }
+        }
         const res = await fetch(`${API_BASE}/agents/${agentToUse}/run`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task: promptToSend, top_k_rag: topKRag }),
+          body: JSON.stringify({ task: contextualTask, top_k_rag: topKRag }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}: ${res.statusText}`)

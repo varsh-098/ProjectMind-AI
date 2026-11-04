@@ -244,11 +244,43 @@ class Supervisor:
         user_prompt: str,
         session_id: Optional[str] = None,
         persist_run: bool = True,
+        history: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Orchestrate and execute the user's task across the dynamically routed pipeline.
-        Optionally persists the run trace to MongoDB Atlas.
+        Supports multi-turn conversational context resolution ('test it', 'review it', 'explain this').
+        Optionally persists messages and run trace to MongoDB Atlas.
         """
+        # Multi-turn contextual reference resolution
+        effective_prompt = user_prompt
+        if history:
+            last_assistant_output = ""
+            last_user_query = ""
+            for msg in reversed(history):
+                r = msg.get("role")
+                c = msg.get("content", "")
+                if r == "assistant" and not last_assistant_output and c:
+                    last_assistant_output = c
+                elif r == "user" and not last_user_query and c and c != user_prompt:
+                    last_user_query = c
+                if last_assistant_output and last_user_query:
+                    break
+
+            lower = user_prompt.lower().strip()
+            referential_markers = ["it", "this", "that", "the above", "the code", "the function", "these", "again", "now"]
+            words = lower.split()
+            is_referential = any(m in words for m in referential_markers) or len(words) <= 3
+
+            if is_referential and (last_assistant_output or last_user_query):
+                context_snippet = last_assistant_output[:2500]
+                effective_prompt = (
+                    f"User Follow-up Request: {user_prompt}\n\n"
+                    f"Context from Previous Turn:\n"
+                    f"Previous Question: {last_user_query}\n"
+                    f"Previous Generated Code / Output:\n{context_snippet}\n\n"
+                    f"Instruction: Apply '{user_prompt}' directly to the previous code/content above."
+                )
+
         routing_plan = self.classify_intent(user_prompt)
         intent = routing_plan["intent"]
         pipeline = routing_plan["pipeline"]
@@ -300,7 +332,7 @@ class Supervisor:
 
         # Strategy 2: Single-Agent or Multi-Agent Pipeline Execution
         stage_results: Dict[str, Any] = {}
-        context_accumulator = user_prompt
+        context_accumulator = effective_prompt
 
         for stage_name in pipeline:
             agent = self.agent_registry.get(stage_name)
