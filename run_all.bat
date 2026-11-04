@@ -5,13 +5,17 @@ echo ========================================================
 cd /d "%~dp0"
 
 echo [1/2] Starting FastAPI Backend on http://127.0.0.1:8081 ...
-start "ProjectMind AI - Backend (Port 8081)" cmd /k "cd /d "%~dp0" && call .venv\Scripts\activate.bat && uvicorn backend.main:app --host 127.0.0.1 --port 8081 --reload"
+start "ProjectMind AI - Backend (Port 8081)" "%~dp0run_backend.bat"
+
+timeout /t 2 /nobreak >nul
 
 echo [2/2] Starting Vite Frontend on http://127.0.0.1:5173 ...
-start "ProjectMind AI - Frontend (Port 5173)" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "ProjectMind AI - Frontend (Port 5173)" "%~dp0run_frontend.bat"
 
 echo.
-echo All services launched!
-echo Open your web browser at: http://localhost:5173
+echo ========================================================
+echo  All services started!
+echo  Open your web browser at: http://localhost:5173
+echo ========================================================
 echo.
 pause

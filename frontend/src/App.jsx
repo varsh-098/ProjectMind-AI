@@ -119,7 +119,7 @@ function Login({ go, onHome, onLoginSuccess }) {
     }
   }
 
-  return <div className="auth-card-wrap"><div className="auth-mobile-brand"><Brand onHome={onHome}/></div><div className="auth-card"><div className="auth-card-kicker"><span className="auth-kicker-icon"><Sparkles size={15}/></span> YOUR WORKSPACE AWAITS</div><h2>Welcome back<span>.</span></h2><p className="auth-subtitle">Sign in to continue where your ideas left off.</p><form onSubmit={submit} className="auth-form"><label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={16}/><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label><PasswordField label="Password" value={password} onChange={e => setPassword(e.target.value)}/><div className="auth-options"><label className="remember-label"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}/><span className="custom-check"><Check size={11}/></span> Remember me</label><button type="button" className="text-action" onClick={() => go('forgot')}>Forgot password?</button></div><AuthMessage type={msgType}>{message}</AuthMessage><button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Signing in...' : <>Sign in <ArrowRight size={17}/></>}</button></form><div className="auth-divider"><span/> <small>OR CONTINUE WITH</small> <span/></div><button className="google-button" type="button" onClick={() => { setMsgType('error'); setMessage('Google sign-in will be enabled when OAuth is connected to the backend.') }}><span className="google-g">G</span> Continue with Google</button><p className="auth-switch">New to ProjectMind? <button onClick={() => go('signup')}>Create an account</button></p></div><p className="auth-legal">By continuing, you agree to our <button onClick={() => { setMsgType('error'); setMessage('Terms of Service will be published before launch.') }}>Terms of Service</button> and <button onClick={() => { setMsgType('error'); setMessage('Privacy Policy will be published before launch.') }}>Privacy Policy</button>.</p></div>
+  return <div className="auth-card-wrap"><div className="auth-mobile-brand"><Brand onHome={onHome}/></div><div className="auth-card"><div className="auth-card-kicker"><span className="auth-kicker-icon"><Sparkles size={15}/></span> YOUR WORKSPACE AWAITS</div><h2>Welcome back<span>.</span></h2><p className="auth-subtitle">Sign in to continue where your ideas left off.</p><form onSubmit={submit} className="auth-form"><label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={16}/><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label><PasswordField label="Password" value={password} onChange={e => setPassword(e.target.value)}/><div className="auth-options"><label className="remember-label"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}/><span className="custom-check"><Check size={11}/></span> Remember me</label><button type="button" className="text-action" onClick={() => go('forgot')}>Forgot password?</button></div><AuthMessage type={msgType}>{message}</AuthMessage><button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Signing in...' : <>Sign in <ArrowRight size={17}/></>}</button></form><div className="auth-divider"><span/> <small>OR CONTINUE WITH</small> <span/></div><button className="google-button" type="button" onClick={() => { setMsgType('error'); setMessage('Google sign-in will be enabled when OAuth is connected to the backend.') }}><span className="google-g">G</span> Continue with Google</button><p className="auth-switch">New to ProjectMind? <button onClick={() => go('signup')}>Create an account</button></p><div style={{ marginTop: '12px', textAlign: 'center' }}><button type="button" onClick={() => go('workspace')} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}>⚡ Enter Workspace Directly (Demo Mode) &rarr;</button></div></div><p className="auth-legal">By continuing, you agree to our <button onClick={() => { setMsgType('error'); setMessage('Terms of Service will be published before launch.') }}>Terms of Service</button> and <button onClick={() => { setMsgType('error'); setMessage('Privacy Policy will be published before launch.') }}>Privacy Policy</button>.</p></div>
 }
 
 function Signup({ go, onHome, onSignupSuccess }) {
@@ -194,7 +194,7 @@ function Signup({ go, onHome, onSignupSuccess }) {
     }
   }
 
-  return <div className="auth-card-wrap"><div className="auth-mobile-brand"><Brand onHome={onHome}/></div><div className="auth-card signup-card"><div className="auth-card-kicker"><span className="auth-kicker-icon"><Sparkles size={15}/></span> START YOUR JOURNEY</div><h2>Create your account<span>.</span></h2><p className="auth-subtitle">Build a space where your best ideas can grow.</p><form onSubmit={submit} className="auth-form"><label className="auth-field"><span>Full name</span><div className="auth-input-wrap"><UserRound size={16}/><input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoComplete="name" required/></div></label><label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={16}/><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label><PasswordField label="Create password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password"/><div className="password-strength"><div className="strength-bars">{[1,2,3,4].map(n => <i key={n} className={strength >= n ? 'filled' : ''}/>)}</div><span>{password ? ['Weak','Fair','Good','Strong'][Math.max(0,strength-1)] : 'Use 8+ characters with a mix of letters and numbers'}</span></div><PasswordField label="Confirm password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter your password" autoComplete="new-password"/><label className="remember-label terms-check"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}/><span className="custom-check"><Check size={11}/></span><span>I agree to the <button type="button" onClick={() => { setMsgType('error'); setMessage('Terms of Service will be published before launch.') }}>Terms of Service</button> and <button type="button" onClick={() => { setMsgType('error'); setMessage('Privacy Policy will be published before launch.') }}>Privacy Policy</button>.</span></label><AuthMessage type={msgType}>{message}</AuthMessage><button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Creating account...' : <>Create account <ArrowRight size={17}/></>}</button></form><p className="auth-switch">Already have an account? <button onClick={() => go('login')}>Sign in</button></p></div></div>
+  return <div className="auth-card-wrap"><div className="auth-mobile-brand"><Brand onHome={onHome}/></div><div className="auth-card signup-card"><div className="auth-card-kicker"><span className="auth-kicker-icon"><Sparkles size={15}/></span> START YOUR JOURNEY</div><h2>Create your account<span>.</span></h2><p className="auth-subtitle">Build a space where your best ideas can grow.</p><form onSubmit={submit} className="auth-form"><label className="auth-field"><span>Full name</span><div className="auth-input-wrap"><UserRound size={16}/><input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoComplete="name" required/></div></label><label className="auth-field"><span>Email address</span><div className="auth-input-wrap"><Mail size={16}/><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label><PasswordField label="Create password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password"/><div className="password-strength"><div className="strength-bars">{[1,2,3,4].map(n => <i key={n} className={strength >= n ? 'filled' : ''}/>)}</div><span>{password ? ['Weak','Fair','Good','Strong'][Math.max(0,strength-1)] : 'Use 8+ characters with a mix of letters and numbers'}</span></div><PasswordField label="Confirm password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter your password" autoComplete="new-password"/><label className="remember-label terms-check"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}/><span className="custom-check"><Check size={11}/></span><span>I agree to the <button type="button" onClick={() => { setMsgType('error'); setMessage('Terms of Service will be published before launch.') }}>Terms of Service</button> and <button type="button" onClick={() => { setMsgType('error'); setMessage('Privacy Policy will be published before launch.') }}>Privacy Policy</button>.</span></label><AuthMessage type={msgType}>{message}</AuthMessage><button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Creating account...' : <>Create account <ArrowRight size={17}/></>}</button></form><p className="auth-switch">Already have an account? <button onClick={() => go('login')}>Sign in</button></p><div style={{ marginTop: '12px', textAlign: 'center' }}><button type="button" onClick={() => go('workspace')} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}>⚡ Enter Workspace Directly (Demo Mode) &rarr;</button></div></div></div>
 }
 
 function Forgot({ go, onHome }) {
@@ -204,9 +204,23 @@ function Forgot({ go, onHome }) {
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [page, setPage] = useState('home')
+  const [page, setPage] = useState(() => {
+    const hash = window.location.hash.replace('#', '')
+    return ['workspace', 'login', 'signup', 'forgot'].includes(hash) ? hash : 'home'
+  })
   const [showNotice, setShowNotice] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '')
+      if (['workspace', 'login', 'signup', 'forgot', 'home'].includes(hash)) {
+        setPage(hash || 'home')
+      }
+    }
+    window.addEventListener('hashchange', handleHash)
+    return () => window.removeEventListener('hashchange', handleHash)
+  }, [])
 
   useEffect(() => {
     // Check if user already has an active session cookie on load
@@ -226,13 +240,9 @@ export default function App() {
   const navigate = next => { setPage(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); window.history.replaceState(null, '', next === 'home' ? window.location.pathname : `#${next}`) }
   const enterProject = () => { document.getElementById('capabilities')?.scrollIntoView({ behavior: 'smooth' }) }
 
-  // Requirement 1: If user is new (unauthenticated), redirect to signup; otherwise open workspace
+  // Direct access to workspace for development and live demonstration
   const handleOpenWorkspace = () => {
-    if (currentUser) {
-      navigate('workspace')
-    } else {
-      navigate('signup')
-    }
+    navigate('workspace')
   }
 
   if (page === 'workspace') {
