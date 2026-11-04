@@ -82,8 +82,8 @@ class MongoDBManager:
             # Set a 5-second server selection timeout to fail fast if offline
             self._client = MongoClient(
                 self.uri,
-                serverSelectionTimeoutMS=5000,
-                connectTimeoutMS=5000,
+                serverSelectionTimeoutMS=800,
+                connectTimeoutMS=800,
                 appName="ProjectMind-AI",
             )
         return self._client

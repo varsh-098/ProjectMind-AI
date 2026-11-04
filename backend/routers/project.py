@@ -15,7 +15,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from pathlib import Path
 from backend.brain import tools
+
+TARGET_PROJECT_SUBPATH = "course_enrollment_portal"
 
 router = APIRouter(
     prefix="/project",
@@ -99,6 +102,24 @@ class SearchResponse(BaseModel):
     description="Returns high-level project stats: file count, total LOC, and languages.",
 )
 async def get_summary() -> dict[str, Any]:
+    portal_files = tools.list_files(subpath=TARGET_PROJECT_SUBPATH)
+    if portal_files:
+        total_lines = 0
+        ext_breakdown = {}
+        for f in portal_files:
+            try:
+                file_content = tools.read_file(f["path"])
+                total_lines += len(file_content.splitlines())
+                ext = f.get("extension", ".py")
+                ext_breakdown[ext] = ext_breakdown.get(ext, 0) + 1
+            except Exception:
+                pass
+        return {
+            "total_files": len(portal_files),
+            "total_lines": total_lines,
+            "extension_breakdown": ext_breakdown,
+            "project_name": "Online Course Enrollment Portal",
+        }
     return tools.get_project_summary()
 
 
@@ -111,8 +132,9 @@ async def get_tree(
     subpath: str = Query(default="", description="Subdirectory to render"),
     max_depth: int = Query(default=4, ge=1, le=10, description="Max folder depth"),
 ) -> dict[str, str]:
+    effective_subpath = subpath if subpath else TARGET_PROJECT_SUBPATH
     try:
-        tree_text = tools.get_project_tree(subpath=subpath, max_depth=max_depth)
+        tree_text = tools.get_project_tree(subpath=effective_subpath, max_depth=max_depth)
         return {"tree": tree_text}
     except NotADirectoryError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -128,8 +150,9 @@ async def get_tree(
 async def list_files(
     subpath: str = Query(default="", description="Subfolder to list"),
 ) -> list[dict[str, Any]]:
+    effective_subpath = subpath if subpath else TARGET_PROJECT_SUBPATH
     try:
-        return tools.list_files(subpath=subpath)
+        return tools.list_files(subpath=effective_subpath)
     except NotADirectoryError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
@@ -143,9 +166,14 @@ async def list_files(
     description="Safely reads the content or line slice of a project file.",
 )
 async def read_file_endpoint(req: ReadFileRequest) -> ReadFileResponse:
+    target_path = req.path
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    if not (repo_root / target_path).exists():
+        if (repo_root / TARGET_PROJECT_SUBPATH / target_path).exists():
+            target_path = f"{TARGET_PROJECT_SUBPATH}/{target_path}"
     try:
         content = tools.read_file(
-            path=req.path,
+            path=target_path,
             start_line=req.start_line,
             end_line=req.end_line,
             with_line_numbers=req.with_line_numbers,
