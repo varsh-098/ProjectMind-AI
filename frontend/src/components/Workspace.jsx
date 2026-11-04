@@ -709,23 +709,6 @@ How can I assist your workflow today?`,
             </button>
           </div>
 
-          {/* Quick Starter Chips */}
-          <div className="quick-prompts-bar">
-            <span className="quick-prompt-label">Quick Prompts:</span>
-            {QUICK_PROMPTS.map((qp, idx) => (
-              <button
-                key={idx}
-                className="quick-prompt-chip"
-                onClick={() => {
-                  setActiveAgent('supervisor')
-                  handleSend(qp.prompt, 'supervisor')
-                }}
-              >
-                <span>{qp.label}</span>
-                <ChevronRight size={12} />
-              </button>
-            ))}
-          </div>
 
           {/* Messages Stream */}
           <div className="messages-stream">
