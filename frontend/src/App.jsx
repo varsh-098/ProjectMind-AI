@@ -207,7 +207,6 @@ export default function App() {
   const [page, setPage] = useState('home')
   const [showNotice, setShowNotice] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
-  const [selectedCapability, setSelectedCapability] = useState(null)
 
   useEffect(() => {
     // Check if user already has an active session cookie on load
@@ -277,40 +276,32 @@ export default function App() {
     </div>
   )}</header>
     <section className="hero" id="home"><div className="hero-copy"><div className="eyebrow"><span className="status-dot"/> YOUR INTELLIGENT WORKSPACE</div><h1>Think beyond<br/><span>boundaries.</span></h1><p className="hero-subtitle">A new orbit for your ideas. Bring coding, research, and discovery into one intelligent workspace.</p><div className="hero-actions"><button className="primary-button" onClick={handleOpenWorkspace}>Open Workspace <ArrowRight size={17}/></button><a className="secondary-button" href="#capabilities">Explore capabilities <ArrowDown size={15}/></a></div><div className="trust-line"><ShieldCheck size={15}/> Built for focused thinking and meaningful work</div></div><div className="planet-stage" aria-label="Interactive animated energy orb"><div className="planet-halo"/><EnergyPlanet/><div className="planet-caption"><span className="caption-pulse"/> PROJECTMIND GALAXY <span className="caption-line"/></div><div className="floating-label label-one"><Sparkles size={14}/> A universe of ideas</div><div className="floating-label label-two"><AudioLines size={14}/> Move to explore</div></div><div className="hero-bottom-note"><span>01</span> AN INTELLIGENT SPACE FOR WHAT'S NEXT</div><a className="scroll-cue" href="#capabilities" aria-label="Scroll to capabilities"><span/> Scroll to explore</a></section>
-    <section className="capabilities section-wrap" id="capabilities"><div className="section-heading"><div><div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div><h2>Everything you need to<br/><span>move ideas forward.</span></h2></div><p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p></div><div className="capability-grid">{capabilities.map((cap, i) => { const { icon: Icon, title, text, tag } = cap; return <article className="capability-card" key={title} style={{ '--card-index': i, cursor: 'pointer' }} onClick={() => setSelectedCapability(cap)}><div className="card-top"><span className="cap-icon"><Icon size={19}/></span><span className="card-index">0{i+1}</span></div><div className="card-tag">{tag}</div><h3>{title}</h3><p>{text}</p><button type="button" className="card-link" onClick={e => { e.stopPropagation(); setSelectedCapability(cap) }}>View capability brief <ArrowRight size={15}/></button></article> })}</div></section>
+    <section className="capabilities section-wrap" id="capabilities">
+      <div className="section-heading">
+        <div>
+          <div className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</div>
+          <h2>Everything you need to<br/><span>move ideas forward.</span></h2>
+        </div>
+        <p>Thoughtfully connected tools for turning questions into clarity and concepts into progress.</p>
+      </div>
+      <div className="capability-grid">
+        {capabilities.map((cap, i) => {
+          const { icon: Icon, title, text, tag } = cap;
+          return (
+            <article className="capability-card" key={title} style={{ '--card-index': i, cursor: 'default' }}>
+              <div className="card-top">
+                <span className="cap-icon"><Icon size={19}/></span>
+                <span className="card-index">0{i+1}</span>
+              </div>
+              <div className="card-tag">{tag}</div>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          );
+        })}
+      </div>
+    </section>
     <section className="about-strip section-wrap" id="about"><div className="about-orbit"><Orbit size={26}/></div><div><div className="eyebrow">MADE FOR CURIOSITY</div><h2>Your next idea starts <span>somewhere.</span></h2></div><a href="#home" className="back-top">Back to top <ArrowUpRight size={16}/></a></section><footer className="footer"><Brand onHome={() => navigate('home')} compact/><span>© 2026 ProjectMind AI · A workspace for curious minds.</span><button className="footer-help" onClick={() => setShowNotice(true)}><CircleHelp size={14}/> About this project</button></footer>
     {showNotice && <div className="notice-backdrop" onClick={() => setShowNotice(false)}><div className="notice-panel" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}><button className="notice-close" onClick={() => setShowNotice(false)}><X size={18}/></button><span className="notice-icon"><Sparkles size={22}/></span><div className="eyebrow">COMING IN THE NEXT PHASE</div><h2>The next orbit is taking shape.</h2><p>This capability will be part of your ProjectMind workspace. We're building the experience step by step.</p><button className="primary-button notice-action" onClick={() => setShowNotice(false)}>Sounds good <ArrowRight size={16}/></button></div></div>}
-    {selectedCapability && (
-      <div className="notice-backdrop" onClick={() => setSelectedCapability(null)}>
-        <div className="cap-brief-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-          <button className="notice-close" onClick={() => setSelectedCapability(null)} aria-label="Close">
-            <X size={18} />
-          </button>
-          <div className="cap-brief-header">
-            <div className="notice-icon" style={{ marginBottom: 0 }}>
-              {React.createElement(selectedCapability.icon, { size: 22 })}
-            </div>
-            <div>
-              <span className="cap-brief-tag">{selectedCapability.tag}</span>
-              <h2>{selectedCapability.title}</h2>
-            </div>
-          </div>
-          <p className="cap-brief-subtitle">{selectedCapability.subtitle}</p>
-          <div className="cap-brief-body">{selectedCapability.brief}</div>
-          <div className="cap-highlights-title">Key Capabilities</div>
-          <div className="cap-highlights-list">
-            {selectedCapability.highlights.map(h => (
-              <span key={h} className="cap-highlight-chip">
-                <Check size={12} className="text-violet-400" />
-                {h}
-              </span>
-            ))}
-          </div>
-          <button className="primary-button notice-action" type="button" onClick={() => setSelectedCapability(null)}>
-            Close Brief <Check size={16} />
-          </button>
-        </div>
-      </div>
-    )}
   </main>
 }

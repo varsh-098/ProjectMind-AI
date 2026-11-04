@@ -75,8 +75,8 @@ h1 span, .section-heading h2 span, .about-strip h2 span { background: linear-gra
 .section-heading h2, .about-strip h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(34px, 4vw, 52px); line-height: 1.08; letter-spacing: -.06em; font-weight: 500; margin: 18px 0 0; }
 .section-heading > p { max-width: 330px; color: #8e8ba5; font-size: 13px; line-height: 1.8; margin: 0 0 4px; }
 .capability-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.capability-card { position: relative; min-height: 250px; padding: 21px 20px 19px; border: 1px solid rgba(188, 166, 255, .13); border-radius: 15px; background: linear-gradient(145deg, rgba(21, 19, 43, .75), rgba(8, 9, 19, .8)); box-shadow: inset 0 1px rgba(255,255,255,.025); transition: transform .28s ease, border-color .28s ease, background .28s ease; animation: rise-in .8s both; animation-delay: calc(var(--card-index) * 90ms); }
-.capability-card:hover { transform: translateY(-5px); border-color: rgba(163, 120, 255, .42); background: linear-gradient(145deg, rgba(35, 25, 66, .78), rgba(8, 12, 26, .9)); }
+.capability-card { position: relative; min-height: 220px; padding: 21px 20px 19px; border: 1px solid rgba(188, 166, 255, .13); border-radius: 15px; background: linear-gradient(145deg, rgba(21, 19, 43, .75), rgba(8, 9, 19, .8)); box-shadow: inset 0 1px rgba(255,255,255,.025); animation: rise-in .8s both; animation-delay: calc(var(--card-index) * 90ms); cursor: default; }
+.capability-card:hover { border-color: rgba(188, 166, 255, .2); }
 .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .cap-icon { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 11px; color: #bba2ff; background: linear-gradient(145deg, rgba(137, 88, 255, .2), rgba(63, 203, 255, .06)); border: 1px solid rgba(167, 135, 255, .2); }
 .card-index { color: #5c5876; font-size: 10px; letter-spacing: .1em; }
