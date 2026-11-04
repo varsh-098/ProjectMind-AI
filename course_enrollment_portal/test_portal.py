@@ -103,3 +103,4 @@ def test_admin_dashboard_summary():
     assert admin_summary["metrics"]["total_registered_students"] == 1
     assert admin_summary["metrics"]["total_course_offerings"] >= 5
     assert len(admin_summary["course_breakdown"]) >= 5
+

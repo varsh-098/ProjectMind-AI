@@ -41,3 +41,4 @@ If true on matching days, a `TIMETABLE_COLLISION` event is generated with clear 
 - **Phase 2 (Weeks 3-4):** Course Listings Catalog & Search Engine.
 - **Phase 3 (Weeks 5-6):** Enrollment Management & AI Conflict Detection Engine.
 - **Phase 4 (Weeks 7-8):** Admin Dashboard, Analytics, and Production Hardening.
+

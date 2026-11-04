@@ -69,3 +69,4 @@ class EnrollmentRecord:
     course_code: str
     status: str                       # "ENROLLED", "WAITLISTED", "DROPPED", "REJECTED_CONFLICT"
     reason: Optional[str] = None
+

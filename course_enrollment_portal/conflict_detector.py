@@ -128,3 +128,4 @@ class SchedulingConflictDetector:
             "enrolled_course": target_course.course_code,
             "new_total_credits": current_credits + target_course.credits,
         }
+
