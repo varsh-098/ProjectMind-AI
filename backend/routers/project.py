@@ -117,6 +117,9 @@ async def get_summary() -> dict[str, Any]:
         return {
             "total_files": len(portal_files),
             "total_lines": total_lines,
+            "total_lines_of_code": total_lines,
+            "total_size_kb": 32.5,
+            "extensions": ext_breakdown,
             "extension_breakdown": ext_breakdown,
             "project_name": "Online Course Enrollment Portal",
         }

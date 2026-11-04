@@ -545,7 +545,7 @@ How can I assist your workflow today?`,
             <div className="workspace-stats-pill">
               <span>{projectSummary.total_files} files</span>
               <span className="pill-dot">·</span>
-              <span>{projectSummary.total_lines_of_code.toLocaleString()} LOC</span>
+              <span>{(projectSummary.total_lines_of_code ?? projectSummary.total_lines ?? 0).toLocaleString()} LOC</span>
             </div>
           )}
         </div>

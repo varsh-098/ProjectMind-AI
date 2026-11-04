@@ -209,7 +209,25 @@ export default function App() {
     return ['workspace', 'login', 'signup', 'forgot'].includes(hash) ? hash : 'home'
   })
   const [showNotice, setShowNotice] = useState(false)
-  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUser, setCurrentUserState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('projectmind_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
+  const setCurrentUser = user => {
+    setCurrentUserState(user)
+    try {
+      if (user) {
+        localStorage.setItem('projectmind_user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('projectmind_user')
+      }
+    } catch {}
+  }
 
   useEffect(() => {
     const handleHash = () => {
@@ -251,8 +269,11 @@ export default function App() {
 
   if (page === 'workspace') {
     if (!currentUser) {
-      navigate('login')
-      return null
+      return (
+        <AuthShell onHome={() => navigate('home')}>
+          <Login go={navigate} onHome={() => navigate('home')} onLoginSuccess={user => { setCurrentUser(user); navigate('workspace'); }} />
+        </AuthShell>
+      )
     }
     return <Workspace user={currentUser} onBack={() => navigate('home')} />
   }
